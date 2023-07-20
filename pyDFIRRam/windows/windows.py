@@ -61,7 +61,7 @@ format = {self.format}
 
     def __getattr__(self, key):
         if key in self.cmds:
-            return self.__run_commands(key)
+            return lambda : self.__run_commands(key)
         return super().__getattr__(self, key)
     def __in_cache(self,funcName):
         with open(self.__cache_filename(funcName), "r") as file:
@@ -86,7 +86,13 @@ format = {self.format}
                 json.dump(jsondata,fichier)  
     def __render_outputFormat(self,jsondata):
         if self.format=="dataframe":
-            return pandas.DataFrame(jsondata)
+            try:
+                print("To dataframe")
+                t= pandas.DataFrame(jsondata)
+                return t
+            except:
+                print("Can't transform data to dataframe")
+                return jsondata
         elif self.format == "json":
             return jsondata
     def __rename_pstree(self,node):
@@ -352,17 +358,17 @@ format = {self.format}
         #    un json ou un yaml qui lancera toute les fonctions    #
         ############################################################
         data=[]
+        if config_file:
+            self.format = "json"
         for funcName in commandToExec:
             print("Fonction en cours: ",funcName)
             t= self.__run_commands(funcName)
             data.append(t)
-        if config_file :
-            print(json.dumps(data,indent=2))
-        else:
-            return data
+        return data
+
     def Info(self):
         if os.path.isfile(self.infofn):
-            with open( self.infofn,"r") as file:
+            with open(self.infofn,"r") as file:
                 content = json.load(file)
             return content
         else:
