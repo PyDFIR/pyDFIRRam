@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "rampoetry"
+version = "0.1.0"
+description = ""
+authors = ["Braguette <alexis.debrito@ecole2600.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+volatility3 = "^2.4.1"
+pandas = "^2.0.3"
+datetime = "^5.2"
+regex = "^2023.6.3"
+typing-extensions = "^4.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
