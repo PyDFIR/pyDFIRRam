@@ -5,7 +5,7 @@
     "HiveList":{
         "plugin":"windows.registry.hivelist.HiveList"
     },
-    "CrashInfo":{
+    "Crashinfo":{
         "plugin":"volatility3.framework.plugins.windows.crashinfo.Crashinfo"
     },
     "Envars":{

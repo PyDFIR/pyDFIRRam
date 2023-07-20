@@ -16,7 +16,7 @@ from volatility3.framework import (
 )
 
 class windows(pyDFIRRam):
-    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str = "json",filename:str ="defaultname",showConfig=False) -> None:
+    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str = "json",filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
         # En dev
         self.filename = filename
         format = Outputformat.lower()
@@ -28,6 +28,7 @@ class windows(pyDFIRRam):
         self.filename = filename
         self.dumpPath = InvestFile
         self.formatSave = "json"
+        self.outpath = outpath +"/"
         if format in self.choice:
             self.format = format
         else:
@@ -261,61 +262,7 @@ format = {self.format}
                     print(f"Error in run: {e}")
         return commandToExec
     def PsTree(self):
-        """
-        Exécute le plugin PsTree de Volatility3 sur un fichier d'instantané (dump).
-    
-        Cette méthode prend en entrée :
-        :param dump_filepath: str
-            Le chemin du fichier d'instantané à analyser.
-    
-        :return: dict
-            Un dictionnaire contenant la structure arborescente des processus (PsTree) extraite du dump.
-    
-        Cette méthode exécute le plugin PsTree de Volatility3 sur le fichier d'instantané donné (dump).
-        Le processus d'exécution se déroule en plusieurs étapes :
-    
-        Étape 1 : Construction du contexte d'exécution pour le plugin PsTree.
-            Le plugin PsTree est chargé dans un contexte d'exécution, en utilisant la méthode '__build_context'.
-            Cela configure les automagics nécessaires et autres configurations pour l'exécution du plugin.
-    
-        Étape 2 : Exécution du plugin PsTree.
-            Le plugin PsTree construit dans l'étape précédente est exécuté, et le résultat est stocké dans le dictionnaire 'kb'
-            sous la clé 'PsTree'.
-    
-        Étape 3 : Traitement du résultat.
-            Si le résultat du plugin PsTree est disponible (non vide), la méthode renomme les clés du dictionnaire de résultats
-            pour rendre la structure arborescente plus claire. Le résultat final est un dictionnaire représentant la structure
-            arborescente des processus extraite du dump.
-    
-        Remarque : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
-        directement depuis d'autres parties du code.
-    
-        :rtype: dict
-        """
-        if os.path.isfile(self.__cache_filename("PsTree")):
-            return self.__in_cache("PsTree")
-        else:
-            dump_filepath = self.dumpPath
-            volatility3.framework.require_interface_version(2,0,0)
-            #Ci dessous a gerer plus tard (Gestion des erreurs)
-            plugin_list = self.__getPlugins()
-            #commandToExec soit a lire un fichier yaml soit a passer en argument
-            command = self.Allcommands["PsTree"]["plugin"]
-            command = {
-                'PsTree':{
-                    'plugin':plugin_list[command]
-                    }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            if kb['PsTree']['result']:
-                pstree_artifact = volatility_utils.DictRenderer().render(kb['PsTree']['result'])
-                for tree in pstree_artifact:
-                    self.__rename_pstree(tree)
-                self.__save_file(pstree_artifact,self.__cache_filename("PsTree"))
-                print(pstree_artifact)
-                return self.__render_outputFormat(pstree_artifact)
-            else:
-                print("Error")
+        return self.__run_commands("PsList")
     def __setContext(self,args):
         context = contexts.Context()
         for e in args:
@@ -341,22 +288,7 @@ format = {self.format}
                     pass
 
     def PsList(self):
-        if os.path.isfile(self.__cache_filename("PsList")):
-            return self.__in_cache("PsList")
-        else:
-            dump_filepath = self.dumpPath
-            command = self.Allcommands["PsList"]["plugin"]
-            plugin_list = self.__getPlugins()
-            command = {
-                'PsList':{
-                    'plugin':plugin_list[command]
-                    }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb= self.__parse_output(kb)
-            retkb = retkb['PsList']['result']
-            self.__save_file(retkb,self.__cache_filename("PsList"))
-            return self.__render_outputFormat(retkb)
+        return self.__run_commands("PsList")
     
     def CmdLine(self):
         if os.path.isfile(self.__cache_filename("PsList")):
@@ -407,61 +339,13 @@ format = {self.format}
             self.infofn = filename
             return data
     def PsScan(self):
-        if os.path.isfile(self.__cache_filename("PsScan")):
-            return self.__in_cache("PsScan")
-        else:
-            dump_filepath = self.dumpPath
-            command = self.Allcommands["PsScan"]["plugin"]
-            plugin_list = self.__getPlugins()
-            command = {
-                'PsScan':{
-                    'plugin':plugin_list[command]
-                    }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb = self.__parse_output(kb)
-            retkb = retkb['PsScan']['result']
-            self.__save_file(retkb,self.__cache_filename("PsScan"))
-            return self.__render_outputFormat(retkb)
+        return self.__run_commands("PsScan")
     
     def NetScan(self):
-        if os.path.isfile(self.__cache_filename("NetScan")):
-            with open(self.__cache_filename("NetScan"), "r") as file:
-                content = json.load(file)
-            return content
-        else:
-            dump_filepath = self.dumpPath
-            command = self.Allcommands["NetScan"]["plugin"]
-            plugin_list = self.__getPlugins()
-            command = {
-                'NetScan':{
-                    'plugin':plugin_list[command]
-                    }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb = self.__parse_output(kb)
-            retkb = retkb['NetScan']['result']
-            self.__save_file(retkb,self.__cache_filename("NetScan"))
-            return self.__render_outputFormat(retkb)
+        return self.__run_commands("NetScan")
     def FileScan(self):
-        if os.path.isfile(self.__cache_filename("FileScan")):
-            with open(self.__cache_filename("FileScan"), "r") as file:
-                content = json.load(file)
-            return content
-        else:
-            dump_filepath = self.dumpPath
-            command = self.Allcommands["FileScan"]["plugin"]
-            plugin_list = self.__getPlugins()
-            command = {
-                'FileScan':{
-                    'plugin':plugin_list[command]
-                    }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb = self.__parse_output(kb)
-            retkb = retkb['FileScan']['result']
-            self.__save_file(retkb,self.__cache_filename("FileScan"))
-            return self.__render_outputFormat(retkb)
+        return self.__run_commands("FileScan")
+    
     def DumpFiles(self,offset:list):
         def DumpFiles_build_context(self,investigation_file_path, plugin, context, base_config_path,output_paths):
             """
@@ -502,7 +386,7 @@ format = {self.format}
             except Exception as e:
                 print(e)
             return constructed
-        output_path = "/home/remnux/Desktop/project/2600/Sidequest/pyDFIR/"
+        output_path = self.outpath
         for e in offset:
             for fn in  os.listdir(output_path):
                 if "file."+str(hex(e)) in fn:
@@ -523,7 +407,7 @@ format = {self.format}
             data=[]
             for e in offset:
                 volatility3.framework.require_interface_version(2, 0, 0)
-                output_path = "/home/remnux/Desktop/project/2600/Sidequest/pyDFIR/"
+                output_path = self.outpath
                 failures = volatility3.framework.import_files(plugins, True)
                 plugin_list = volatility3.framework.list_plugins()
                 base_config_path = "plugins"
@@ -555,22 +439,31 @@ format = {self.format}
                 data.append(result)
             return result
     def Envars(self):
-        if os.path.isfile(self.__cache_filename("Envars")):
-            print(self.__cache_filename("Envars"))
-            with open(self.__cache_filename("Envars"), "r") as file:
+        return self.__run_commands("Envars")
+        
+    def Crashinfo(self):
+        return self.__run_commands("Crashinfo")
+    def HiveList(self):
+        return self.__run_commands("HiveList")
+    
+    def __run_commands(self,funcName):
+        if os.path.isfile(self.__cache_filename(funcName)):
+            with open(self.__cache_filename(funcName), "r") as file:
                 content = json.load(file)
             return self.__render_outputFormat(content)
         else:
             dump_filepath = self.dumpPath
-            command = self.Allcommands["Envars"]["plugin"]
+            command = self.Allcommands[funcName]["plugin"]
             plugin_list = self.__getPlugins()
             command = {
-                'Envars':{
+                funcName:{
                     'plugin':plugin_list[command]
                     }
                 }
             kb = self.__runner(dump_filepath,"plugins",command)
             retkb = self.__parse_output(kb)
-            retkb = retkb['Envars']['result']
-            self.__save_file(retkb,self.__cache_filename("Envars"))
+            retkb = retkb[funcName]['result']
+            self.__save_file(retkb,self.__cache_filename(funcName))
             return self.__render_outputFormat(retkb)
+    def HiveScan():
+        pass
