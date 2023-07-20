@@ -12,7 +12,7 @@ def main():
     with open(args.config_file, "r") as file:
        config = json.load(file)
     print(config["Config"]["InvestigationFile"],config["Config"]["SaveFile"])
-    obj = windows(config["Config"]["InvestigationFile"],showConfig=True,savefile=config["Config"]["SaveFile"])
+    obj = windows(config["Config"]["InvestigationFile"],showConfig=True,savefile=config["Config"]["SaveFile"],outpath=config["Config"]["output_path"],Outputformat=config["Config"]["output_format"])
     print(config["Command"])
     obj.AllPlugins(config["Command"],True)
 if __name__=="__main__":

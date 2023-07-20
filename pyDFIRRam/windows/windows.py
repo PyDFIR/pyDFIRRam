@@ -18,6 +18,7 @@ from volatility3.framework import (
 class windows(pyDFIRRam):
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
         # En dev
+        self.cmds = ["PsList","HiveList","Crashinfo","Envars","VerInfo","MutantScan","BigPools","HiveScan","getSids","VADinfo","skeleton_key_check","Sessions","Strings","GetSetviceSids","WindowsInfo","DllList","NetScan","NetStat","PoolScanner","SSDT","LsaDump","ModScan","SymLinkScan","PsScan","PsTree","MBRScan","DumpFiles","VirtMap","CmdLine","LdrModules","CacheDump","FileScan","Handles","VadInfo","DriverScan","DeviceTree","YaraScan","VadYaraScan","SvcScan","HashDump","DriverIrp","CallBacks","Modules","Malfind","MFTscan","Memmap","Privs","UserAssist","Hivescan","PrintKey"]
         self.filename = filename
         format = Outputformat.lower()
         self.choice = [
@@ -55,9 +56,13 @@ format = {self.format}
             self.filename = "/tmp/"
         else:
             raise Exception()
-     
         self.progress = PrintedProgress()
         self.infofn = ""
+
+    def __getattr__(self, key):
+        if key in self.cmds:
+            return self.__run_commands(key)
+        return super().__getattr__(self, key)
     def __in_cache(self,funcName):
         with open(self.__cache_filename(funcName), "r") as file:
             content = json.load(file)
@@ -72,13 +77,13 @@ format = {self.format}
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
     def __save_file(self,jsondata,filename):
-        print(self.filename)
         if self.savefile:
+            print(self.filename)
             with open(self.filename+".json", 'w') as fichier:
-                json.dump(jsondata, self.filename)
+                json.dump(jsondata, fichier)
         else:
             with open(filename, 'w') as fichier:
-                    json.dump(jsondata,fichier)  
+                json.dump(jsondata,fichier)  
     def __render_outputFormat(self,jsondata):
         if self.format=="dataframe":
             return pandas.DataFrame(jsondata)
@@ -149,72 +154,6 @@ format = {self.format}
         except:
             print("Unable to get plugins")
         return volatility3.framework.list_plugins()  
-    def AllPlugins(self,commandToExec: json = None,config_file=False) -> json:
-        """
-        Exécute une série de plugins de Volatility3 sur un fichier d'instantané (dump).
-
-        Cette méthode prend en entrée :
-        :param dump_filepath: str
-            Le chemin du fichier d'instantané à analyser.
-        :param commandToExec: dict, optionnel (par défaut None)
-            Un dictionnaire contenant les plugins à exécuter et leurs paramètres spécifiques.
-            La structure du dictionnaire est la suivante :
-            {
-                'Plugin1': {
-                    'plugin': PluginObject1,
-                    'param1': value1,
-                    'param2': value2,
-                    ...
-                },
-                'Plugin2': {
-                    'plugin': PluginObject2,
-                    'param1': value3,
-                    'param2': value4,
-                    ...
-                },
-                ...
-            }
-            Le paramètre 'plugin' doit être un objet de plugin valide de Volatility3.
-
-        :return: dict
-            Un dictionnaire contenant les résultats des plugins exécutés.
-
-        Cette méthode exécute les plugins spécifiés dans le dictionnaire 'commandToExec' sur le fichier d'instantané
-        (dump) donné. Le processus se déroule en trois étapes :
-
-        Étape 1 : Construction des contextes d'exécution pour chaque plugin.
-            Les plugins spécifiés dans 'commandToExec' sont chargés dans un contexte d'exécution, en utilisant la méthode
-            '__build_context', qui configure les automagics nécessaires et autres configurations pour l'exécution du plugin.
-
-        Étape 2 : Exécution des plugins et rendu des résultats.
-            Chaque plugin construit dans l'étape précédente est exécuté, et les résultats sont rendus sous forme de dictionnaires
-            de données. Les résultats sont stockés dans le dictionnaire 'commandToExec'.
-
-        Étape 3 : Traitement des résultats.
-            Certains plugins peuvent avoir des clés de résultats non désirées. Dans cette étape, ces clés sont retirées pour
-            obtenir un dictionnaire de résultats propre.
-
-        Remarque : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
-        directement depuis d'autres parties du code.
-
-        :rtype: dict
-        """
-
-        ############################################################
-        #                                                          #
-        #   Changera a terme pour prendre en parametre             #
-        #    un json ou un yaml qui lancera toute les fonctions    #
-        ############################################################
-        data=[]
-        for funcName in commandToExec:
-            print("Fonction en cours: ",funcName)
-            t= self.__run_commands(funcName)
-            data.append(t)
-        if config_file :
-            print(json.dumps(data,indent=2))
-        else:
-            return data
-
     def __parse_output(self,commandToExec):
         for runable in commandToExec:
             commandToExec_entry = commandToExec[runable]
@@ -225,8 +164,6 @@ format = {self.format}
                 except Exception as e:
                     print(f"Error in run: {e}")
         return commandToExec
-    def PsTree(self):
-        return self.__run_commands("PsTree")
     def __setContext(self,args):
         context = contexts.Context()
         for e in args:
@@ -234,7 +171,6 @@ format = {self.format}
                 context.config[k] = int(v)
         return context
     def __runner(self,dump_filepath,base_config_path,kb,args=None):
-        
         for runable in kb:
             if args:
                 context = self.__setContext(args)
@@ -249,61 +185,23 @@ format = {self.format}
                 except:
                     print("error in run")
                     pass
-    def PsList(self):
-        return self.__run_commands("PsList")
-    def CmdLine(self):
-        if os.path.isfile(self.__cache_filename("PsList")):
-            return self.__in_cache("PsList")
-        else:
-            dump_filepath = self.dumpPath
-            command = self.Allcommands["CmdLine"]["plugin"]
-            plugin_list = self.__getPlugins()
-            command = {
-                'CmdLine':{
-                    'plugin':plugin_list[command]
+    def __run_commands(self,funcName):
+            if os.path.isfile(self.__cache_filename(funcName)):
+                return self.__in_cache(funcName)
+            else:
+                dump_filepath = self.dumpPath
+                command = self.Allcommands[funcName]["plugin"]
+                plugin_list = self.__getPlugins()
+                command = {
+                    funcName:{
+                        'plugin':plugin_list[command]
+                        }
                     }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb = self.__parse_output(kb)
-            retkb = retkb['CmdLine']['result']
-            self.__save_file(retkb,self.__cache_filename("CmdLine"))
-            return self.__render_outputFormat(retkb)
-    def Info(self):
-        if os.path.isfile(self.infofn):
-            with open( self.infofn,"r") as file:
-                content = json.load(file)
-            return content
-        else:
-            dump_filepath = self.dumpPath
-            plugin_list = self.__getPlugins()
-            command = self.Allcommands["WindowsInfo"]["plugin"]
-            command = {
-                'Info':{
-                    'plugin':plugin_list[command]
-                    }
-                }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb = self.__parse_output(kb)
-            retkb = retkb['Info']['result']
-            header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
-            index = 0
-            data = {}
-            for k in header:
-                data[k] = retkb[index]["Value"]
-                index += 1 
-            productSys = data["NtProductType"]
-            dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
-            timestamp = str(int(dateOnSys.timestamp())) 
-            self.filename = "/tmp/"+productSys+timestamp+"Info"+".json"
-            self.__save_file(data,self.filename)
-            self.infofn = self.filename
-            return data
-    def PsScan(self):
-        return self.__run_commands("PsScan")
-    def NetScan(self):
-        return self.__run_commands("NetScan")
-    def FileScan(self):
-        return self.__run_commands("FileScan")
+                kb = self.__runner(dump_filepath,"plugins",command)
+                retkb = self.__parse_output(kb)
+                retkb = retkb[funcName]['result']
+                self.__save_file(retkb,self.__cache_filename(funcName))
+                return self.__render_outputFormat(retkb)
     def DumpFiles(self,offset:list):
         def DumpFiles_build_context(self,investigation_file_path, plugin, context, base_config_path,output_paths):
             """
@@ -396,91 +294,104 @@ format = {self.format}
                                 for x, y in artifact.items()}
                 data.append(result)
             return result
-    def Envars(self):
-        return self.__run_commands("Envars")
-    def Crashinfo(self):
-        return self.__run_commands("Crashinfo")
-    def HiveList(self):
-        return self.__run_commands("HiveList")
-    def __run_commands(self,funcName):
-        if os.path.isfile(self.__cache_filename(funcName)):
-            with open(self.__cache_filename(funcName), "r") as file:
+
+    def AllPlugins(self,commandToExec: json = None,config_file=False) -> json:
+        """
+        Exécute une série de plugins de Volatility3 sur un fichier d'instantané (dump).
+
+        Cette méthode prend en entrée :
+        :param dump_filepath: str
+            Le chemin du fichier d'instantané à analyser.
+        :param commandToExec: dict, optionnel (par défaut None)
+            Un dictionnaire contenant les plugins à exécuter et leurs paramètres spécifiques.
+            La structure du dictionnaire est la suivante :
+            {
+                'Plugin1': {
+                    'plugin': PluginObject1,
+                    'param1': value1,
+                    'param2': value2,
+                    ...
+                },
+                'Plugin2': {
+                    'plugin': PluginObject2,
+                    'param1': value3,
+                    'param2': value4,
+                    ...
+                },
+                ...
+            }
+            Le paramètre 'plugin' doit être un objet de plugin valide de Volatility3.
+
+        :return: dict
+            Un dictionnaire contenant les résultats des plugins exécutés.
+
+        Cette méthode exécute les plugins spécifiés dans le dictionnaire 'commandToExec' sur le fichier d'instantané
+        (dump) donné. Le processus se déroule en trois étapes :
+
+        Étape 1 : Construction des contextes d'exécution pour chaque plugin.
+            Les plugins spécifiés dans 'commandToExec' sont chargés dans un contexte d'exécution, en utilisant la méthode
+            '__build_context', qui configure les automagics nécessaires et autres configurations pour l'exécution du plugin.
+
+        Étape 2 : Exécution des plugins et rendu des résultats.
+            Chaque plugin construit dans l'étape précédente est exécuté, et les résultats sont rendus sous forme de dictionnaires
+            de données. Les résultats sont stockés dans le dictionnaire 'commandToExec'.
+
+        Étape 3 : Traitement des résultats.
+            Certains plugins peuvent avoir des clés de résultats non désirées. Dans cette étape, ces clés sont retirées pour
+            obtenir un dictionnaire de résultats propre.
+
+        Remarque : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
+        directement depuis d'autres parties du code.
+
+        :rtype: dict
+        """
+
+        ############################################################
+        #                                                          #
+        #   Changera a terme pour prendre en parametre             #
+        #    un json ou un yaml qui lancera toute les fonctions    #
+        ############################################################
+        data=[]
+        for funcName in commandToExec:
+            print("Fonction en cours: ",funcName)
+            t= self.__run_commands(funcName)
+            data.append(t)
+        if config_file :
+            print(json.dumps(data,indent=2))
+        else:
+            return data
+    def Info(self):
+        if os.path.isfile(self.infofn):
+            with open( self.infofn,"r") as file:
                 content = json.load(file)
-            return self.__render_outputFormat(content)
+            return content
         else:
             dump_filepath = self.dumpPath
-            command = self.Allcommands[funcName]["plugin"]
             plugin_list = self.__getPlugins()
+            command = self.Allcommands["WindowsInfo"]["plugin"]
             command = {
-                funcName:{
+                'Info':{
                     'plugin':plugin_list[command]
                     }
                 }
             kb = self.__runner(dump_filepath,"plugins",command)
             retkb = self.__parse_output(kb)
-            retkb = retkb[funcName]['result']
-            self.__save_file(retkb,self.__cache_filename(funcName))
-            return self.__render_outputFormat(retkb)
-    def HiveScan(self):
-        return self.__run_commands("HiveScan")
-    def VerInfo(self):
-        return self.__run_commands("VerInfo")
-    def MutantScan(self):
-        return self.__run_commands("MutantScan")
-    def BigPools(self):
-        return self.__run_commands("BigPools")
-    def HiveScan(self):
-        return self.__run_commands("HiveScan")
-    def getSids(self):
-        return self.__run_commands("getSids")
-    def VADinfo(self):
-        return self.__run_commands("VADinfo")
-    def Sessions(self):
-        return self.__run_commands("Sessions")
-    def GetSetviceSids(self):
-        return self.__run_commands("GetSetviceSids")
-    def WindowsInfo(self):
-        return self.__run_commands("WindowsInfo")
-    def DllList(self):
-        return self.__run_commands("DllList")
-    def NetStat(self):
-        return self.__run_commands("NetStat")
-    def PoolScanner(self):
-        return self.__run_commands("PoolScanner")
-    def SSDT(self):
-        return self.__run_commands("SSDT")
-    def ModScan(self):
-        return self.__run_commands("ModScan")
-    def SymLinkScan(self):
-        return self.__run_commands("SymLinkScan")
-    def MBRScan(self):
-        return self.__run_commands("MBRScan")
-    def VirtMap(self):
-        return self.__run_commands("VirtMap")
-    def VadInfo(self):
-        return self.__run_commands("VadInfo")
-    def DriverScan(self):
-        return self.__run_commands("DriverScan")
-    def DeviceTree(self):
-        return self.__run_commands("DeviceTree")
-    def SvcScan(self):
-        return self.__run_commands("SvcScan")
-    def DriverIrp(self):
-        return self.__run_commands("DriverIrp")
-    def CallBacks(self):
-        return self.__run_commands("CallBacks")
-    def Modules(self):
-        return self.__run_commands("Modules")
-    def Malfind(self):
-        return self.__run_commands("Malfind")
-    def MFTscan(self):
-        return self.__run_commands("MFTscan")
-    def Privs(self):
-        return self.__run_commands("Privs")
-    def UserAssist(self):
-        return self.__run_commands("UserAssist")
-    def Hivescan(self):
-        return self.__run_commands("Hivescan")
+            retkb = retkb['Info']['result']
+            header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
+            index = 0
+            data = {}
+            for k in header:
+                data[k] = retkb[index]["Value"]
+                index += 1 
+            productSys = data["NtProductType"]
+            dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
+            timestamp = str(int(dateOnSys.timestamp())) 
+            self.filename = "/tmp/"+productSys+timestamp+"Info"+".json"
+            self.__save_file(data,self.filename)
+            self.infofn = self.filename
+            return data
+
+
     #def PrintKey(self):
     #    return self.__run_commands("PrintKey")
     #def skeleton_key_check(self):
