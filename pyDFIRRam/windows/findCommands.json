@@ -117,7 +117,7 @@
         "plugin":"volatility3.framework.plugins.windows.svcscan.SvcScan"
     },
     "HashDump":{
-        "plugin":"volatility3.framework.plugins.windows.hashdump.Hashdump"
+        "plugin":"'windows.hashdump.Hashdump'"
     },
     "DriverIrp":{
         "plugin":"volatility3.framework.plugins.windows.driverirp.DriverIrp"

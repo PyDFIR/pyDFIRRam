@@ -72,8 +72,6 @@ format = {self.format}
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
     def __save_file(self,jsondata,filename):
-        # Non testé 
-        # # en dev
         if self.savefile:
             with open(self.filename+".json", 'w') as fichier:
                 json.dump(jsondata, self.filename)
@@ -103,7 +101,6 @@ format = {self.format}
             del (node['ImageFileName'])
             for children in node['children']:
                 self.__rename_pstree(children)
-
     def __build_context(self,investigation_file_path, plugin, context, base_config_path):
         """
         Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
@@ -135,6 +132,7 @@ format = {self.format}
         automagics = automagic.choose_automagic(avail_automagics,plugin)
         context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
         context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
+    
         try:
             if self.progress == PrintedProgress():
                 print("plugin: ", (str(plugin).split(".")[-1])[:-2])
@@ -144,14 +142,12 @@ format = {self.format}
         except Exception as e:
             print(e)
         return constructed
-    
     def __getPlugins(self):
         try:
             failures = volatility3.framework.import_files(plugins,True)
         except:
             print("Unable to get plugins")
-        return volatility3.framework.list_plugins()
-    
+        return volatility3.framework.list_plugins()  
     def AllPlugins(self,commandToExec: json = None) -> json:
         """
         Exécute une série de plugins de Volatility3 sur un fichier d'instantané (dump).
@@ -213,13 +209,8 @@ format = {self.format}
         dump_filepath = self.dumpPath 
         plugin_list = self.__getPlugins()
         commandToExec = {
-            'PsList':{
-                'plugin' :plugin_list['windows.pslist.PsList']
-                },
-            'CmdLine':{
-                'plugin' :plugin_list['volatility3.framework.plugins.windows.cmdline.CmdLine']
-                }
-            }
+            'Hashdump': {'plugin': plugin_list['windows.hashdump.Hashdump']}
+        }
         base_config_path = "plugins"
         # Step 1: Build contexts
         for runable in commandToExec:
@@ -232,11 +223,15 @@ format = {self.format}
             if commandToExec_entry['constructed']:
                 try:
                     result = volatility_utils.DictRenderer().render(commandToExec_entry['constructed'].run())
+                    print(result)
                     commandToExec_entry['result'] = result
+                    print(commandToExec_entry)
                 except Exception as e:
                     print(f"Error in run: {e}")
+                    
         # Step 3: Process results and remove unwanted keys
         for runable in commandToExec:
+            print(commandToExec_entry)
             commandToExec_entry = commandToExec[runable]
             if runable != 'PsTree' and runable != 'UserAssist' and runable != 'DeviceTree':
                 for artifact in commandToExec_entry['result']:
@@ -250,7 +245,6 @@ format = {self.format}
             self.__save_file(commandToExec,self.filename)
         else:
             return commandToExec
-
     def __parse_output(self,commandToExec):
         for runable in commandToExec:
             commandToExec_entry = commandToExec[runable]
@@ -268,7 +262,6 @@ format = {self.format}
         for e in args:
             for k,v in e.items():
                 context.config[k] = int(v)
-        print(context.config['plugins.DumpFiles.physaddr'])
         return context
     def __runner(self,dump_filepath,base_config_path,kb,args=None):
         
@@ -286,10 +279,8 @@ format = {self.format}
                 except:
                     print("error in run")
                     pass
-
     def PsList(self):
         return self.__run_commands("PsList")
-    
     def CmdLine(self):
         if os.path.isfile(self.__cache_filename("PsList")):
             return self.__in_cache("PsList")
@@ -307,7 +298,6 @@ format = {self.format}
             retkb = retkb['CmdLine']['result']
             self.__save_file(retkb,self.__cache_filename("CmdLine"))
             return self.__render_outputFormat(retkb)
-        
     def Info(self):
         if os.path.isfile(self.infofn):
             with open( self.infofn,"r") as file:
@@ -340,12 +330,10 @@ format = {self.format}
             return data
     def PsScan(self):
         return self.__run_commands("PsScan")
-    
     def NetScan(self):
         return self.__run_commands("NetScan")
     def FileScan(self):
         return self.__run_commands("FileScan")
-    
     def DumpFiles(self,offset:list):
         def DumpFiles_build_context(self,investigation_file_path, plugin, context, base_config_path,output_paths):
             """
@@ -440,12 +428,10 @@ format = {self.format}
             return result
     def Envars(self):
         return self.__run_commands("Envars")
-        
     def Crashinfo(self):
         return self.__run_commands("Crashinfo")
     def HiveList(self):
         return self.__run_commands("HiveList")
-    
     def __run_commands(self,funcName):
         if os.path.isfile(self.__cache_filename(funcName)):
             with open(self.__cache_filename(funcName), "r") as file:
@@ -479,8 +465,6 @@ format = {self.format}
         return self.__run_commands("getSids")
     def VADinfo(self):
         return self.__run_commands("VADinfo")
-    def skeleton_key_check(self):
-        return self.__run_commands("skeleton_key_check")
     def Sessions(self):
         return self.__run_commands("Sessions")
     def GetSetviceSids(self):
@@ -495,8 +479,6 @@ format = {self.format}
         return self.__run_commands("PoolScanner")
     def SSDT(self):
         return self.__run_commands("SSDT")
-    def LsaDump(self):
-        return self.__run_commands("LsaDump")
     def ModScan(self):
         return self.__run_commands("ModScan")
     def SymLinkScan(self):
@@ -505,24 +487,14 @@ format = {self.format}
         return self.__run_commands("MBRScan")
     def VirtMap(self):
         return self.__run_commands("VirtMap")
-    def LdrModules(self):
-        return self.__run_commands("LdrModules")
-    def CacheDump(self):
-        return self.__run_commands("CacheDump")
     def VadInfo(self):
         return self.__run_commands("VadInfo")
     def DriverScan(self):
         return self.__run_commands("DriverScan")
     def DeviceTree(self):
         return self.__run_commands("DeviceTree")
-    def YaraScan(self):
-        return self.__run_commands("YaraScan")
-    def VadYaraScan(self):
-        return self.__run_commands("VadYaraScan")
     def SvcScan(self):
         return self.__run_commands("SvcScan")
-    def HashDump(self):
-        return self.__run_commands("HashDump")
     def DriverIrp(self):
         return self.__run_commands("DriverIrp")
     def CallBacks(self):
@@ -533,13 +505,27 @@ format = {self.format}
         return self.__run_commands("Malfind")
     def MFTscan(self):
         return self.__run_commands("MFTscan")
-    def Memmap(self):
-        return self.__run_commands("Memmap")
     def Privs(self):
         return self.__run_commands("Privs")
     def UserAssist(self):
         return self.__run_commands("UserAssist")
     def Hivescan(self):
         return self.__run_commands("Hivescan")
-    def PrintKey(self):
-        return self.__run_commands("PrintKey")
+    #def PrintKey(self):
+    #    return self.__run_commands("PrintKey")
+    #def skeleton_key_check(self):
+    #    return self.__run_commands("skeleton_key_check")
+    #def Memmap(self):
+    #    return self.__run_commands("Memmap")
+    #def HashDump(self):
+    #    return self.__run_commands("HashDump")
+    #def YaraScan(self):
+    #    return self.__run_commands("YaraScan")
+    #def VadYaraScan(self):
+    #    return self.__run_commands("VadYaraScan")
+    #def LdrModules(self):
+    #    return self.__run_commands("LdrModules")
+    #def CacheDump(self):
+    #    return self.__run_commands("CacheDump")
+    #def LsaDump(self):
+    #    return self.__run_commands("LsaDump")
