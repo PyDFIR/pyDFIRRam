@@ -27,6 +27,7 @@ class windows(pyDFIRRam):
         self.savefile = savefile
         self.filename = filename
         self.dumpPath = InvestFile
+        self.formatSave = "json"
         if format in self.choice:
             self.format = format
         else:
@@ -73,31 +74,8 @@ format = {self.format}
         # Non testé 
         # # en dev
         if self.savefile:
-            #if self.format == "xlsx":
-            #    df = pandas.DataFrame(jsondata)
-            #    df.to_excel(self.filename+".xlsx", index=False)
-            #elif self.format == "csv":
-            #    with open(self.filename+".csv", 'w', newline='') as fichier:
-            #        if isinstance(jsondata[0], dict):
-            #            # Si les données sont sous forme de dictionnaires, utilisez les clés comme en-têtes de colonnes.
-            #            fieldnames = jsondata[0].keys()
-            #            writer = csv.DictWriter(fichier, fieldnames=fieldnames)
-            #            writer.writeheader()
-            #            writer.writerows(jsondata)
-            #        elif isinstance(jsondata[0], list):
-            #            # Si les données sont sous forme de listes, écrivez directement les lignes dans le fichier CSV.
-            #            writer = csv.writer(fichier)
-            #            writer.writerows(jsondata)
-            if self.format == "json":
-                with open(self.filename+".json", 'w') as fichier:
-                    json.dump(jsondata, self.filename)
-            #elif self.format == "parquet":
-            #    df = pandas.DataFrame(jsondata)
-            #    df.to_parquet(self.filename+".parquet", engine='pyarrow')
-            elif self.format == "dataframe":
-                df = pandas.DataFrame(jsondata)
-            else:
-                print("le format n'a pas été renseigné ou contient des erreurs")
+            with open(self.filename+".json", 'w') as fichier:
+                json.dump(jsondata, self.filename)
         else:
             with open(filename, 'w') as fichier:
                     json.dump(jsondata,fichier)  
@@ -576,3 +554,23 @@ format = {self.format}
                                 for x, y in artifact.items()}
                 data.append(result)
             return result
+    def Envars(self):
+        if os.path.isfile(self.__cache_filename("Envars")):
+            print(self.__cache_filename("Envars"))
+            with open(self.__cache_filename("Envars"), "r") as file:
+                content = json.load(file)
+            return self.__render_outputFormat(content)
+        else:
+            dump_filepath = self.dumpPath
+            command = self.Allcommands["Envars"]["plugin"]
+            plugin_list = self.__getPlugins()
+            command = {
+                'Envars':{
+                    'plugin':plugin_list[command]
+                    }
+                }
+            kb = self.__runner(dump_filepath,"plugins",command)
+            retkb = self.__parse_output(kb)
+            retkb = retkb['Envars']['result']
+            self.__save_file(retkb,self.__cache_filename("Envars"))
+            return self.__render_outputFormat(retkb)
