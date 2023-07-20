@@ -16,7 +16,7 @@ from volatility3.framework import (
 )
 
 class windows(pyDFIRRam):
-    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str = "json",filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
+    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
         # En dev
         self.filename = filename
         format = Outputformat.lower()
@@ -72,6 +72,7 @@ format = {self.format}
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
     def __save_file(self,jsondata,filename):
+        print(self.filename)
         if self.savefile:
             with open(self.filename+".json", 'w') as fichier:
                 json.dump(jsondata, self.filename)
@@ -148,7 +149,7 @@ format = {self.format}
         except:
             print("Unable to get plugins")
         return volatility3.framework.list_plugins()  
-    def AllPlugins(self,commandToExec: json = None) -> json:
+    def AllPlugins(self,commandToExec: json = None,config_file=False) -> json:
         """
         Exécute une série de plugins de Volatility3 sur un fichier d'instantané (dump).
 
@@ -204,47 +205,16 @@ format = {self.format}
         #   Changera a terme pour prendre en parametre             #
         #    un json ou un yaml qui lancera toute les fonctions    #
         ############################################################
-        
-        volatility3.framework.require_interface_version(2,0,0)
-        dump_filepath = self.dumpPath 
-        plugin_list = self.__getPlugins()
-        commandToExec = {
-            'Hashdump': {'plugin': plugin_list['windows.hashdump.Hashdump']}
-        }
-        base_config_path = "plugins"
-        # Step 1: Build contexts
-        for runable in commandToExec:
-            context = contexts.Context()
-            commandToExec_entry = commandToExec[runable]
-            commandToExec_entry['constructed'] = self.__build_context(dump_filepath, commandToExec_entry['plugin'], context, base_config_path)
-        # Step 2: Render results for constructed contexts
-        for runable in commandToExec:
-            commandToExec_entry = commandToExec[runable]
-            if commandToExec_entry['constructed']:
-                try:
-                    result = volatility_utils.DictRenderer().render(commandToExec_entry['constructed'].run())
-                    print(result)
-                    commandToExec_entry['result'] = result
-                    print(commandToExec_entry)
-                except Exception as e:
-                    print(f"Error in run: {e}")
-                    
-        # Step 3: Process results and remove unwanted keys
-        for runable in commandToExec:
-            print(commandToExec_entry)
-            commandToExec_entry = commandToExec[runable]
-            if runable != 'PsTree' and runable != 'UserAssist' and runable != 'DeviceTree':
-                for artifact in commandToExec_entry['result']:
-                    artifact = {x.translate({32: None}): y for x, y in artifact.items() if x != '__children'}
-                    if 'Offset(V)' in artifact:
-                        artifact['Offset'] = artifact.pop('Offset(V)')
-                    if 'Tag' in artifact:
-                        artifact['VTag'] = artifact.pop('Tag')
-        # A changer, il faudra que je return dict propre :)
-        if self.savefile:
-            self.__save_file(commandToExec,self.filename)
+        data=[]
+        for funcName in commandToExec:
+            print("Fonction en cours: ",funcName)
+            t= self.__run_commands(funcName)
+            data.append(t)
+        if config_file :
+            print(json.dumps(data,indent=2))
         else:
-            return commandToExec
+            return data
+
     def __parse_output(self,commandToExec):
         for runable in commandToExec:
             commandToExec_entry = commandToExec[runable]
@@ -256,7 +226,7 @@ format = {self.format}
                     print(f"Error in run: {e}")
         return commandToExec
     def PsTree(self):
-        return self.__run_commands("PsList")
+        return self.__run_commands("PsTree")
     def __setContext(self,args):
         context = contexts.Context()
         for e in args:
@@ -324,9 +294,9 @@ format = {self.format}
             productSys = data["NtProductType"]
             dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
             timestamp = str(int(dateOnSys.timestamp())) 
-            filename = "/tmp/"+productSys+timestamp+"Info"+".json"
-            self.__save_file(data,filename)
-            self.infofn = filename
+            self.filename = "/tmp/"+productSys+timestamp+"Info"+".json"
+            self.__save_file(data,self.filename)
+            self.infofn = self.filename
             return data
     def PsScan(self):
         return self.__run_commands("PsScan")

@@ -1,7 +1,8 @@
 {
     "Config":{
-        "InvestigationFile":[""]
+        "InvestigationFile":"/home/remnux/Desktop/project/2600/memdump.mem",
+        "SaveFile": false
     },
-    "Command":["PsTree"]
+    "Command":["Info","PsTree","PsScan"]
 
 }

@@ -3,7 +3,7 @@ from pyDFIRRam import windows
 import pandas
 file = "/home/remnux/Desktop/project/2600/memdump.mem"
 windows_obj = windows(file,showConfig=True,Outputformat="dataframe")
-c= windows_obj.HiveList()
+c= windows_obj.PsTree()
 print(c)
 #def unique(data):
 #    ret = []
