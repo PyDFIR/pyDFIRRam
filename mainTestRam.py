@@ -3,8 +3,8 @@ from pyDFIRRam import windows
 import pandas
 file = "/home/remnux/Desktop/project/2600/memdump.mem"
 windows_obj = windows(file,showConfig=True,Outputformat="dataframe")
-#c= windows_obj.HiveList()
-#print(c)
+c= windows_obj.HiveList()
+print(c)
 #def unique(data):
 #    ret = []
 #    for e in data:

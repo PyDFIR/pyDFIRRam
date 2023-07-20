@@ -1,0 +1,7 @@
+{
+    "Config":{
+        "InvestigationFile":[""]
+    },
+    "Command":["PsTree"]
+
+}
