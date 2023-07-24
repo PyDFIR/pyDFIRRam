@@ -37,10 +37,11 @@ class linux(pyDFIRRam):
             print(f"{format} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
         if showConfig:
             print(f"""
-######################### Config #########################
-#Save file = {self.savefile}                             
-#format = {self.format}                                   
-##########################################################""") 
+                    ######################### Config #########################
+                        Save file = {self.savefile}                           
+                        format = {self.format}                                     
+                    ##########################################################
+                    """) 
         getcwd = str(pathlib.Path(__file__).parent) + '/findCommands.json'
         with open(getcwd,'r') as fichier:
             content = fichier.read()

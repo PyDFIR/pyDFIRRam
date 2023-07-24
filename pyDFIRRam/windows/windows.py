@@ -30,6 +30,7 @@ class windows(pyDFIRRam):
         self.dumpPath = InvestFile
         self.formatSave = "json"
         self.outpath = outpath +"/"
+        self.showconf = showConfig
         if format in self.choice:
             self.format = format
         else:
@@ -361,7 +362,8 @@ format = {self.format}
         if config_file:
             self.format = "json"
         for funcName in commandToExec:
-            print("Fonction en cours: ",funcName)
+            if self.showconf:
+                print("Fonction en cours: ",funcName)
             t= self.__run_commands(funcName)
             data.append(t)
         return data
