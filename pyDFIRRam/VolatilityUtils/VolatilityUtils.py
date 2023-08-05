@@ -1,11 +1,10 @@
 import volatility3.symbols
 from volatility3.framework.renderers import format_hints
-import datetime, io, tempfile, os,hashlib
+import datetime, io, tempfile, os
 from typing import Dict, Any, List, Tuple,Optional
 
 
 from volatility3.cli import (
-    PrintedProgress,
     text_renderer,
 )
 from volatility3.framework import interfaces
@@ -94,8 +93,7 @@ class VolatilityUtils:
             final_output: Tuple[Dict[str, List[interfaces.renderers.TreeNode]], List[interfaces.renderers.TreeNode]] = (
                 {}, [])
 
-            def visitor(node: interfaces.renderers.TreeNode,
-                        accumulator: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]) -> Tuple[
+            def visitor(node: interfaces.renderers.TreeNode,accumulator: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]) -> Tuple[
                 Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
                 acc_map, final_tree = accumulator
                 node_dict: Dict[str, Any] = {'__children': []}

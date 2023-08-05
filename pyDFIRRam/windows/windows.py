@@ -64,6 +64,7 @@ format = {self.format}
         if key in self.cmds:
             return lambda : self.__run_commands(key)
         return super().__getattr__(self, key)
+
     def __in_cache(self,funcName):
         with open(self.__cache_filename(funcName), "r",encoding="UTF-8") as file:
             content = json.load(file)
@@ -77,26 +78,27 @@ format = {self.format}
         timestamp = str(int(dateOnSys.timestamp())) 
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
-    def __save_file(self,jsondata,filename):
+    def __save_file(self,jsondata:dict,filename:str):
         if self.savefile:
             print(self.filename)
             with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata, fichier)
         else:
             with open(filename, 'w') as fichier:
-                json.dump(jsondata,fichier)  
-    def __render_outputFormat(self,jsondata):
+                json.dump(jsondata,fichier)
+
+    def __render_outputFormat(self,jsondata:dict):
         if self.format=="dataframe":
             try:
                 print("To dataframe")
-                t= pandas.DataFrame(jsondata)
-                return t
+                return pandas.DataFrame(jsondata)
             except:
                 print("Can't transform data to dataframe")
                 return jsondata
         elif self.format == "json":
             return jsondata
-    def __rename_pstree(self,node):
+
+    def __rename_pstree(self,node:dict) -> None:
         """
             Rename les noeuds du Tree qui nous est envoyé
 
@@ -114,7 +116,7 @@ format = {self.format}
             del (node['ImageFileName'])
             for children in node['children']:
                 self.__rename_pstree(children)
-    def __build_context(self,investigation_file_path, plugin, context, base_config_path):
+    def __build_context(self,investigation_file_path:str, plugin, context, base_config_path):
         """
         Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
         Cette méthode prend en entrée plusieurs paramètres :
@@ -155,12 +157,12 @@ format = {self.format}
         except Exception as e:
             print(e)
         return constructed
-    def __getPlugins(self):
+    def __getPlugins(self) -> None:
         try:
             failures = volatility3.framework.import_files(plugins,True)
         except:
             print("Unable to get plugins")
-        return volatility3.framework.list_plugins()  
+        return volatility3.framework.list_plugins()
     def __parse_output(self,commandToExec):
         for runable in commandToExec:
             commandToExec_entry = commandToExec[runable]
@@ -171,12 +173,14 @@ format = {self.format}
                 except Exception as e:
                     print(f"Error in run: {e}")
         return commandToExec
+    
     def __setContext(self,args):
         context = contexts.Context()
         for e in args:
             for k,v in e.items():
                 context.config[k] = int(v)
         return context
+    
     def __runner(self,dump_filepath,base_config_path,kb,args=None):
         for runable in kb:
             if args:
@@ -189,27 +193,29 @@ format = {self.format}
                 try:
                     kb[runable]['result'] = kb[runable]['constructed'].run()
                     return kb
-                except:
-                    print("error in run")
+                except Exception as exceptionHandler:
+                    print("error in run\n Expception:",exceptionHandler)
                     pass
+        
     def __run_commands(self,funcName):
-            if os.path.isfile(self.__cache_filename(funcName)):
-                return self.__in_cache(funcName)
-            else:
-                dump_filepath = self.dumpPath
-                command = self.Allcommands[funcName]["plugin"]
-                plugin_list = self.__getPlugins()
-                command = {
-                    funcName:{
-                        'plugin':plugin_list[command]
-                        }
+        if os.path.isfile(self.__cache_filename(funcName)):
+            return self.__in_cache(funcName)
+        else:
+            dump_filepath = self.dumpPath
+            command = self.Allcommands[funcName]["plugin"]
+            plugin_list = self.__getPlugins()
+            command = {
+                funcName:{
+                    'plugin':plugin_list[command]
                     }
-                kb = self.__runner(dump_filepath,"plugins",command)
-                retkb = self.__parse_output(kb)
-                retkb = retkb[funcName]['result']
-                self.__save_file(retkb,self.__cache_filename(funcName))
-                return self.__render_outputFormat(retkb)
-    def build_contextDump(self,dump_path, context, base_config_path, plugin, output_path):
+                }
+            kb = self.__runner(dump_filepath,"plugins",command)
+            retkb = self.__parse_output(kb)
+            retkb = retkb[funcName]['result']
+            self.__save_file(retkb,self.__cache_filename(funcName))
+            return self.__render_outputFormat(retkb)
+
+    def build_contextDump(self,dump_path, context, base_config_path:str, plugin:str, output_path:str):
         avail_automagics = automagic.available(context)
         automagics = automagic.choose_automagic(avail_automagics, plugin)
         context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
@@ -217,18 +223,18 @@ format = {self.format}
         constructed = plugins.construct_plugin(context, automagics, plugin, base_config_path,
                                                MuteProgress(), VolatilityUtils.create_file_handler(output_path))
         return constructed
-    
+
     def DumpFiles(self, offset: list):
         data = []
         output_path = self.outpath
         offset_copy = offset.copy()
-    
+
         for e in offset:
             for fn in os.listdir(output_path):
                 if f"file.{hex(e)}" in fn:
                     if e in offset_copy:
                         offset_copy.remove(e)
-    
+
         if offset_copy:
             for e in offset_copy:
                 volatility3.framework.require_interface_version(2, 0, 0)
@@ -248,14 +254,14 @@ format = {self.format}
                 plugin_list = volatility3.framework.list_plugins()
                 try:
                     constructed = self.build_contextDump(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
-                except:
-                    pass
+                except Exception as e:
+                    print(e)
                 if constructed:
                     result = VolatilityUtils.JsonRenderer().render(constructed.run())
                     if len(result) < 1:
                         del context.config['plugins.DumpFiles.virtaddr']
                         context.config['plugins.DumpFiles.physaddr'] = int(e)
-                        constructed = build_context(self.dumpPath, context, base_config_path,
+                        constructed = self.build_contextDump(self.dumpPath, context, base_config_path,
                                                     plugin_list['windows.dumpfiles.DumpFiles'], output_path)
                         result = VolatilityUtils.JsonRenderer().render(constructed.run())
                 for artifact in result:
@@ -265,7 +271,7 @@ format = {self.format}
         return result
 
 
-    def AllPlugins(self,commandToExec: json = None,config_file=False) -> json:
+    def AllPlugins(self,commandToExec=None,config_file=False) -> dict:
         """
         Exécute une série de plugins de Volatility3 sur un fichier d'instantané (dump).
 
@@ -331,7 +337,7 @@ format = {self.format}
             data.append(t)
         return data
 
-    def Info(self):
+    def Info(self)-> dict:
         if os.path.isfile(self.infofn):
             with open(self.infofn,"r",encoding="UTF-8") as file:
                 content = json.load(file)
@@ -357,7 +363,7 @@ format = {self.format}
             productSys = data["NtProductType"]
             dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
             timestamp = str(int(dateOnSys.timestamp())) 
-            self.filename = "/tmp/"+productSys+timestamp+"Info"+".json"
+            self.filename = "/tmp/"+productSys+timestamp+"Info.json"
             self.__save_file(data,self.filename)
             self.infofn = self.filename
             return data
