@@ -52,6 +52,8 @@ class pyDFIRRam:
             self.ram_info_struct["osinfo"] =  self.__insmod_info(strings_on_file)
             self.ram_info_struct["logs_dataframe"] = self.__grab_logs(strings_on_file,savelogs,namefile)
             return self.ram_info_struct
+        else:
+            return None
     
     def __file_format(self,file)-> str:
         """
