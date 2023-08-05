@@ -1,7 +1,7 @@
 import volatility3.plugins
 import volatility3.symbols
 import json,pandas,csv,pathlib
-from pyDFIRRam.volatility_utils.volatility_utils import *
+from pyDFIRRam.VolatilityUtils.VolatilityUtils import *
 from pyDFIRRam import pyDFIRRam 
 from datetime import datetime
 from volatility3.cli import (
@@ -42,7 +42,7 @@ Save file = {self.savefile}
 format = {self.format}                                   
 ##########################################################""") 
         getcwd = str(pathlib.Path(__file__).parent) + '/findCommands.json'
-        with open(getcwd,'r') as fichier:
+        with open(getcwd,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
             self.Allcommands = json.loads(content)
         nameos = os.name
@@ -65,7 +65,7 @@ format = {self.format}
             return lambda : self.__run_commands(key)
         return super().__getattr__(self, key)
     def __in_cache(self,funcName):
-        with open(self.__cache_filename(funcName), "r") as file:
+        with open(self.__cache_filename(funcName), "r",encoding="UTF-8") as file:
             content = json.load(file)
         return self.__render_outputFormat(content)
     def __cache_filename(self,func):
@@ -80,7 +80,7 @@ format = {self.format}
     def __save_file(self,jsondata,filename):
         if self.savefile:
             print(self.filename)
-            with open(self.filename+".json", 'w') as fichier:
+            with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata, fichier)
         else:
             with open(filename, 'w') as fichier:
@@ -149,7 +149,7 @@ format = {self.format}
         try:
             if self.progress == PrintedProgress():
                 print("plugin: ", (str(plugin).split(".")[-1])[:-2])
-            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,volatility_utils.file_handler(investigation_file_path))
+            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,VolatilityUtils.create_file_handler(investigation_file_path))
             if self.progress == PrintedProgress():
                 print("")
         except Exception as e:
@@ -166,7 +166,7 @@ format = {self.format}
             commandToExec_entry = commandToExec[runable]
             if commandToExec_entry['constructed']:
                 try:
-                    result = volatility_utils.DictRenderer().render(commandToExec_entry['constructed'].run())
+                    result = VolatilityUtils.JsonRenderer().render(commandToExec_entry['constructed'].run())
                     commandToExec_entry['result'] = result
                 except Exception as e:
                     print(f"Error in run: {e}")
@@ -209,66 +209,28 @@ format = {self.format}
                 retkb = retkb[funcName]['result']
                 self.__save_file(retkb,self.__cache_filename(funcName))
                 return self.__render_outputFormat(retkb)
-    def DumpFiles(self,offset:list):
-        def DumpFiles_build_context(self,investigation_file_path, plugin, context, base_config_path,output_paths):
-            """
-        Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
-        Cette méthode prend en entrée plusieurs paramètres :
-        :param investigation_file_path: str
-            Le chemin du fichier d'investigation à utiliser.
-        :param plugin: str
-            Le nom du plugin à exécuter.
-        :param context: dict
-            Le contexte actuel d'exécution de Volatility3.
-        :param base_config_path: str
-            Le chemin de la configuration de base à utiliser.
-        :return: object
-            L'objet représentant le plugin construit dans le contexte de Volatility3.
-        La méthode construit le contexte d'exécution en suivant ces étapes :
-        1. Récupération des automagics disponibles dans le contexte.
-        2. Sélection des automagics spécifiques requis pour le plugin.
-        3. Configuration du contexte pour utiliser les stackers associés aux automagics sélectionnés.
-        4. Configuration du contexte pour traiter un seul emplacement représenté par le fichier d'investigation.
-        5. Construction du plugin en utilisant les automagics, le plugin lui-même, la configuration de base,
-           un objet "PrintedProgress()" pour suivre le progrès, et un gestionnaire de fichiers spécifique.
-        Si une exception est levée lors de la construction du plugin, elle sera affichée, mais ne stoppera pas
-        l'exécution de la méthode.
-        Note : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
-        directement depuis d'autres parties du code.
-        """
-            avail_automagics = automagic.available(context)
-            automagics = automagic.choose_automagic(avail_automagics,plugin)
-            context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
-            context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
-            try:
-                if self.progress == PrintedProgress():
-                    print("plugin: ", (str(plugin).split(".")[-1])[:-2])
-                constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,volatility_utils.file_handler(output_paths))
-                if self.progress == PrintedProgress():
-                    print("")
-            except Exception as e:
-                print(e)
-            return constructed
+    def build_contextDump(self,dump_path, context, base_config_path, plugin, output_path):
+        avail_automagics = automagic.available(context)
+        automagics = automagic.choose_automagic(avail_automagics, plugin)
+        context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
+        context.config['automagic.LayerStacker.single_location'] = f"file://{dump_path}"
+        constructed = plugins.construct_plugin(context, automagics, plugin, base_config_path,
+                                               MuteProgress(), VolatilityUtils.create_file_handler(output_path))
+        return constructed
+    
+    def DumpFiles(self, offset: list):
+        data = []
         output_path = self.outpath
+        offset_copy = offset.copy()
+    
         for e in offset:
-            for fn in  os.listdir(output_path):
-                if "file."+str(hex(e)) in fn:
-                    if e in offset :
-                        offset.remove(e)
-        if offset:
-            def build_context(dump_path, context, base_config_path, plugin, output_path):
-                """This function is used to buid the context and construct each plugin
-                   Return : The contructed plugin.
-                """
-                available_automagics = automagic.available(context)
-                plugin_config_path = interfaces.configuration.path_join(base_config_path, plugin.__name__)
-                automagics = automagic.choose_automagic(available_automagics, plugin)
-                context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
-                context.config['automagic.LayerStacker.single_location'] = "file://"+dump_path
-                constructed = plugins.construct_plugin(context, automagics, plugin, base_config_path, MuteProgress(), volatility_utils.file_handler(output_path))
-                return constructed
-            data=[]
-            for e in offset:
+            for fn in os.listdir(output_path):
+                if f"file.{hex(e)}" in fn:
+                    if e in offset_copy:
+                        offset_copy.remove(e)
+    
+        if offset_copy:
+            for e in offset_copy:
                 volatility3.framework.require_interface_version(2, 0, 0)
                 output_path = self.outpath
                 failures = volatility3.framework.import_files(plugins, True)
@@ -279,28 +241,29 @@ format = {self.format}
                 command = self.Allcommands["DumpFiles"]["plugin"]
                 plugin_list = self.__getPlugins()
                 command = {
-                    'DumpFiles':{
-                        'plugin':plugin_list[command]
-                        }
+                    'DumpFiles': {
+                        'plugin': plugin_list[command]
                     }
+                }
                 plugin_list = volatility3.framework.list_plugins()
                 try:
-                    constructed = build_context(self.dumpPath, context, base_config_path, command["DumpFiles"]["plugin"],output_path)
+                    constructed = self.build_contextDump(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
                 except:
                     pass
                 if constructed:
-                    result = volatility_utils.DictRenderer().render(constructed.run())
+                    result = VolatilityUtils.JsonRenderer().render(constructed.run())
                     if len(result) < 1:
-                        del (context.config['plugins.DumpFiles.virtaddr'])
+                        del context.config['plugins.DumpFiles.virtaddr']
                         context.config['plugins.DumpFiles.physaddr'] = int(e)
                         constructed = build_context(self.dumpPath, context, base_config_path,
                                                     plugin_list['windows.dumpfiles.DumpFiles'], output_path)
-                        result =volatility_utils.DictRenderer().render(constructed.run())
+                        result = VolatilityUtils.JsonRenderer().render(constructed.run())
                 for artifact in result:
                     artifact = {x.translate({32: None}): y
                                 for x, y in artifact.items()}
                 data.append(result)
-            return result
+        return result
+
 
     def AllPlugins(self,commandToExec: json = None,config_file=False) -> json:
         """
@@ -370,7 +333,7 @@ format = {self.format}
 
     def Info(self):
         if os.path.isfile(self.infofn):
-            with open(self.infofn,"r") as file:
+            with open(self.infofn,"r",encoding="UTF-8") as file:
                 content = json.load(file)
             return content
         else:
