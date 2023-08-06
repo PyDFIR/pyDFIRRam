@@ -1,5 +1,6 @@
 *.mem
 /*/__pycache__
-dist/
-rampoetry
-*__pycache__
+/dist/*
+/rampoetry/*
+*/*/__pycache__/
+.vscode/

@@ -1,0 +1,20 @@
+version: '3'
+services:
+  jupyterhub:
+    build: jupyterhub
+    restart: always
+    environment:
+      - DOCKER_JUPYTER_IMAGE=jupyterlab_collab_bug_dockerspawner_notebook
+      - DOCKER_NETWORK_NAME=jupyterlab_collab_bug_dockerspawner_default
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jupyterhub_data:/srv/jupyterhub
+      - ./jupyterhub/jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py:ro
+    ports: 
+      - "0.0.0.0:8000:8000"
+  jupyterlab:
+    build: jupyterlab
+    image: jupyterlab_collab_bug_dockerspawner_notebook
+    command: echo
+volumes:
+  jupyterhub_data:
