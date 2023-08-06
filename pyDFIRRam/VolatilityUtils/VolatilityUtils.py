@@ -30,7 +30,6 @@ class VolatilityUtils:
                 filename, extension = os.path.join(output_dir, '.'.join(pref_name_array[:-1])), pref_name_array[-1]
                 output_filename = f"{filename}.{extension}"
                 print(f"{output_filename} and directory = {output_dir}")
-                counter = 1
                 if os.path.exists(output_filename):
                     os.remove(output_filename)
                 return output_filename

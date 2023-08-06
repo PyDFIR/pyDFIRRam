@@ -1,9 +1,9 @@
+from datetime import datetime
 import volatility3.plugins
 import volatility3.symbols
 import json,pandas,csv,pathlib
 from pyDFIRRam.VolatilityUtils.VolatilityUtils import *
-from pyDFIRRam import pyDFIRRam 
-from datetime import datetime
+from pyDFIRRam import pyDFIRRam
 from volatility3.cli import (
     PrintedProgress,
     MuteProgress
@@ -16,11 +16,12 @@ from volatility3.framework import (
 )
 
 class windows(pyDFIRRam):
-    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
+    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
+                                filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
         # En dev
         self.cmds = ["PsList","HiveList","Crashinfo","Envars","VerInfo","MutantScan","BigPools","HiveScan","getSids","VADinfo","skeleton_key_check","Sessions","Strings","GetSetviceSids","WindowsInfo","DllList","NetScan","NetStat","PoolScanner","SSDT","LsaDump","ModScan","SymLinkScan","PsScan","PsTree","MBRScan","DumpFiles","VirtMap","CmdLine","LdrModules","CacheDump","FileScan","Handles","VadInfo","DriverScan","DeviceTree","YaraScan","VadYaraScan","SvcScan","HashDump","DriverIrp","CallBacks","Modules","Malfind","MFTscan","Memmap","Privs","UserAssist","Hivescan","PrintKey"]
         self.filename = filename
-        format = Outputformat.lower()
+        Outformat = Outputformat.lower()
         self.choice = [
             "json",
             "dataframe"
@@ -30,11 +31,13 @@ class windows(pyDFIRRam):
         self.dumpPath = InvestFile
         self.formatSave = "json"
         self.outpath = outpath +"/"
+        if Outformat in self.choice:
+            self.format = Outformat
         self.showconf = showConfig
         if format in self.choice:
             self.format = format
         else:
-            print(f"{format} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
+            print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
         if showConfig:
             print(f"""
 ######################### Config #########################
@@ -44,7 +47,7 @@ format = {self.format}
         getcwd = str(pathlib.Path(__file__).parent) + '/findCommands.json'
         with open(getcwd,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
-            self.Allcommands = json.loads(content)
+            self.allCommands = json.loads(content)
         nameos = os.name
         if nameos == 'nt':
             self.plateform= "windows"
@@ -202,7 +205,7 @@ format = {self.format}
             return self.__in_cache(funcName)
         else:
             dump_filepath = self.dumpPath
-            command = self.Allcommands[funcName]["plugin"]
+            command = self.allCommands[funcName]["plugin"]
             plugin_list = self.__getPlugins()
             command = {
                 funcName:{
@@ -244,7 +247,7 @@ format = {self.format}
                 base_config_path = "plugins"
                 context = contexts.Context()
                 context.config['plugins.DumpFiles.virtaddr'] = int(e)
-                command = self.Allcommands["DumpFiles"]["plugin"]
+                command = self.allCommands["DumpFiles"]["plugin"]
                 plugin_list = self.__getPlugins()
                 command = {
                     'DumpFiles': {
@@ -345,7 +348,7 @@ format = {self.format}
         else:
             dump_filepath = self.dumpPath
             plugin_list = self.__getPlugins()
-            command = self.Allcommands["WindowsInfo"]["plugin"]
+            command = self.allCommands["WindowsInfo"]["plugin"]
             command = {
                 'Info':{
                     'plugin':plugin_list[command]
