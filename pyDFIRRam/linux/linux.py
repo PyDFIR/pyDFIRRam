@@ -1,7 +1,7 @@
 import volatility3.plugins
 import volatility3.symbols
 import json,pandas,csv,pathlib
-from pyDFIRRam.volatility_utils.volatility_utils import *
+from pyDFIRRam.VolatilityUtils.VolatilityUtils import *
 from pyDFIRRam import pyDFIRRam 
 from datetime import datetime
 from volatility3.cli import (

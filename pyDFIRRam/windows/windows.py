@@ -16,10 +16,75 @@ from volatility3.framework import (
 )
 
 class windows(pyDFIRRam):
+
+
+    def PsList(self,**kwargs):
+        """
+
+        Les arguments sont
+            - Physical
+            - PID
+            - dump
+        """
+        if kwargs:
+            print("ok")
+            self.__run_commands("PsList",kwargs)
+        else:
+            self.__run_commands("PsList")
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
                                 filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
         # En dev
-        self.cmds = ["PsList","HiveList","Crashinfo","Envars","VerInfo","MutantScan","BigPools","HiveScan","getSids","VADinfo","skeleton_key_check","Sessions","Strings","GetSetviceSids","WindowsInfo","DllList","NetScan","NetStat","PoolScanner","SSDT","LsaDump","ModScan","SymLinkScan","PsScan","PsTree","MBRScan","DumpFiles","VirtMap","CmdLine","LdrModules","CacheDump","FileScan","Handles","VadInfo","DriverScan","DeviceTree","YaraScan","VadYaraScan","SvcScan","HashDump","DriverIrp","CallBacks","Modules","Malfind","MFTscan","Memmap","Privs","UserAssist","Hivescan","PrintKey"]
+        self.cmds = [
+            "HiveList",# Prends des arguments {filter, dump}
+            "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
+            "Envars",# Prends des arguments {pid, silent}
+            "VerInfo",# Prends des arguments {extensive}
+            "MutantScan",
+            "BigPools",# Prends des arguments {tags, show-free}
+            "HiveScan",
+            "getSids",# Prends des arguments {pid}
+            "VADinfo",# Prends des arguments {address, pid, dump,maxsize}
+            "skeleton_key_check",
+            "Sessions",# Prends des arguments {pid}
+            "Strings",# Prends des arguments {pid, string-file}
+            "GetSetviceSids",
+            "WindowsInfo",
+            "DllList",# Prends des arguments {pid, dump}
+            "NetScan",# Prends des arguments {include-corrupt}
+            "NetStat",# Prends des arguments {include-corrupt}
+            "PoolScanner",
+            "SSDT",
+            "LsaDump",#idk
+            "ModScan",# Prends des arguments {dump}
+            "SymLinkScan",
+            "PsScan",# Prends des arguments {physical, pid, dump}
+            "PsTree",# Prends des arguments {physical, pid}
+            "MBRScan",# Prends des arguments {full}
+            "DumpFiles",# Prends des arguments {physaddr, virtaddr, pid}
+            "VirtMap",
+            "CmdLine",# Prends des arguments {pid}
+            "LdrModules",# Prends des arguments {pid}
+            "CacheDump",
+            "FileScan",
+            "Handles",# Prends des arguments {pid}
+            "VadInfo",# Prends des arguments {address, pid, dump,maxsize}
+            "DriverScan",
+            "DeviceTree",
+            "YaraScan",#idk
+            "VadYaraScan",#idk
+            "SvcScan",#idk
+            "HashDump",
+            "DriverIrp",
+            "CallBacks",
+            "Modules",
+            "Malfind",
+            "MFTscan",
+            "Memmap",
+            "Privs",
+            "UserAssist",
+            "Hivescan",
+            "PrintKey"
+        ]
         self.filename = filename
         Outformat = Outputformat.lower()
         self.choice = [
@@ -34,8 +99,8 @@ class windows(pyDFIRRam):
         if Outformat in self.choice:
             self.format = Outformat
         self.showconf = showConfig
-        if format in self.choice:
-            self.format = format
+        if Outformat in self.choice:
+            self.format = Outformat
         else:
             print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
         if showConfig:
@@ -63,13 +128,15 @@ format = {self.format}
         self.progress = PrintedProgress()
         self.infofn = ""
 
-    def __getattr__(self, key):
+    def __getattr__(self, key,*args,**kwargs):
         if key in self.cmds:
             return lambda : self.__run_commands(key)
-        return super().__getattr__(self, key)
-
+        else:
+            pass
+    
     def __in_cache(self,funcName):
         with open(self.__cache_filename(funcName), "r",encoding="UTF-8") as file:
+            print(file)
             content = json.load(file)
         return self.__render_outputFormat(content)
     def __cache_filename(self,func):
@@ -77,7 +144,7 @@ format = {self.format}
         p = self.Info()
         self.progress = PrintedProgress()
         productSys = p["NtProductType"]
-        dateOnSys = datetime.strptime(p["SystemTime"], "%Y-%m-%d %H:%M:%S")
+        dateOnSys = datetime.datetime.strptime(p["SystemTime"], "%Y-%m-%d %H:%M:%S")
         timestamp = str(int(dateOnSys.timestamp())) 
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
@@ -87,8 +154,12 @@ format = {self.format}
             with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata, fichier)
         else:
-            with open(filename, 'w') as fichier:
-                json.dump(jsondata,fichier)
+            print(filename)
+            try:
+                with open(filename, 'w',encoding="UTF-8") as fichier:
+                    json.dump(jsondata,fichier)
+            except Exception as e:
+                print(e)
 
     def __render_outputFormat(self,jsondata:dict):
         if self.format=="dataframe":
@@ -119,7 +190,7 @@ format = {self.format}
             del (node['ImageFileName'])
             for children in node['children']:
                 self.__rename_pstree(children)
-    def __build_context(self,investigation_file_path:str, plugin, context, base_config_path):
+    def __build_context(self,investigation_file_path:str, plugin, context, base_config_path,args=None):
         """
         Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
         Cette méthode prend en entrée plusieurs paramètres :
@@ -150,7 +221,17 @@ format = {self.format}
         automagics = automagic.choose_automagic(avail_automagics,plugin)
         context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
         context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
-    
+        
+        if args is not None:
+            frind = (str(plugin).split(".")[-1])[:-2]
+            for k,v in args.items():
+                plugged = self.allCommands[frind]["plugin"] +"."+ str(k)
+                print(int(v))
+                try :
+                    print(plugged)
+                    context.config[plugged] = v
+                except Exception as exxx:
+                    print(exxx)
         try:
             if self.progress == PrintedProgress():
                 print("plugin: ", (str(plugin).split(".")[-1])[:-2])
@@ -177,20 +258,15 @@ format = {self.format}
                     print(f"Error in run: {e}")
         return commandToExec
     
-    def __setContext(self,args):
-        context = contexts.Context()
-        for e in args:
-            for k,v in e.items():
-                context.config[k] = int(v)
-        return context
-    
     def __runner(self,dump_filepath,base_config_path,kb,args=None):
         for runable in kb:
-            if args:
-                context = self.__setContext(args)
+            if args is not None:
+                context = contexts.Context()
+                kb[runable]['constructed'] = self.__build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path,args=args)
             else:
                 context = contexts.Context()
-            kb[runable]['constructed'] = self.__build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path)
+                kb[runable]['constructed'] = self.__build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path)
+        
         for runable in kb:
             if kb[runable]['constructed']:
                 try:
@@ -199,10 +275,15 @@ format = {self.format}
                 except Exception as exceptionHandler:
                     print("error in run\n Expception:",exceptionHandler)
                     pass
-        
-    def __run_commands(self,funcName):
-        if os.path.isfile(self.__cache_filename(funcName)):
-            return self.__in_cache(funcName)
+    
+    def __run_commands(self,funcName,args:list = None):
+        args_added = ""
+        if args:
+            
+            for k,v in args.items():
+                args_added += str(k) +str(v)
+        if os.path.isfile(self.__cache_filename(funcName+args_added)):
+            return self.__in_cache(funcName+args_added)
         else:
             dump_filepath = self.dumpPath
             command = self.allCommands[funcName]["plugin"]
@@ -212,10 +293,20 @@ format = {self.format}
                     'plugin':plugin_list[command]
                     }
                 }
-            kb = self.__runner(dump_filepath,"plugins",command)
-            retkb = self.__parse_output(kb)
-            retkb = retkb[funcName]['result']
-            self.__save_file(retkb,self.__cache_filename(funcName))
+            if not args :
+                kb = self.__runner(dump_filepath,"plugins",command)
+                retkb = self.__parse_output(kb)
+            else:
+                kb =self.__runner(dump_filepath,"plugins",command,args=args)
+                retkb = self.__parse_output(kb)
+                print(retkb)
+                for artifact in retkb:
+                    print("je suis arti",artifact)
+                    artifact = {x.translate({32: None}): y for x, y in artifact.items()}
+                print(retkb)
+                exit(1)
+
+            self.__save_file(retkb,self.__cache_filename(funcName+args_added))
             return self.__render_outputFormat(retkb)
 
     def build_contextDump(self,dump_path, context, base_config_path:str, plugin:str, output_path:str):
@@ -231,7 +322,6 @@ format = {self.format}
         data = []
         output_path = self.outpath
         offset_copy = offset.copy()
-
         for e in offset:
             for fn in os.listdir(output_path):
                 if f"file.{hex(e)}" in fn:
@@ -268,8 +358,7 @@ format = {self.format}
                                                     plugin_list['windows.dumpfiles.DumpFiles'], output_path)
                         result = VolatilityUtils.JsonRenderer().render(constructed.run())
                 for artifact in result:
-                    artifact = {x.translate({32: None}): y
-                                for x, y in artifact.items()}
+                    artifact = {x.translate({32: None}): y for x, y in artifact.items()}
                 data.append(result)
         return result
 
@@ -364,13 +453,12 @@ format = {self.format}
                 data[k] = retkb[index]["Value"]
                 index += 1 
             productSys = data["NtProductType"]
-            dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
+            dateOnSys = datetime.datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
             timestamp = str(int(dateOnSys.timestamp())) 
             self.filename = "/tmp/"+productSys+timestamp+"Info.json"
             self.__save_file(data,self.filename)
             self.infofn = self.filename
             return data
-
 
     #def PrintKey(self):
     #    return self.__run_commands("PrintKey")

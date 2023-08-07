@@ -87,10 +87,10 @@ class pyDFIRRam:
         log_re = re.compile('(\d{4}\-\d{2}\-\d{2}T\d{2}\:\d{2}\:\d{2}\.\d{3}Z)\|(.+)\|(.+)\|(.+)\|(.+)')
         print(log_re.findall(raw_strings))
 
-        df = pandas.DataFrame(log_re.findall(raw_strings), columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
+        dataFrame = pandas.DataFrame(log_re.findall(raw_strings), columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
         if savelogs == True:
-            df.to_excel(namefile+".xlsx",columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
-        return df
+            dataFrame.to_excel(namefile+".xlsx",columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
+        return dataFrame
     
     
     def __insmod_info(self,raw_strings)-> list:

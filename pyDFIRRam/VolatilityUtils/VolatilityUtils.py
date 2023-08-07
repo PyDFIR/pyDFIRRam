@@ -78,7 +78,7 @@ class VolatilityUtils:
             interfaces.renderers.Disassembly: lambda x: text_renderer.quoted_optional(text_renderer.display_disassembly)(x),
             format_hints.MultiTypeData: lambda x: text_renderer.quoted_optional(text_renderer.multitypedata_as_text)(x),
             bytes: lambda x: text_renderer.optional(lambda x: " ".join([f"{b:02x}" for b in x]))(x),
-            datetime: lambda x: x.isoformat() if not isinstance(x, interfaces.renderers.BaseAbsentValue) else None,
+            datetime.datetime : lambda x: x.isoformat() if not isinstance(x, interfaces.renderers.BaseAbsentValue) else None,
             'default': lambda x: x
         }
 
