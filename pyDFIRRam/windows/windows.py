@@ -17,7 +17,7 @@ from volatility3.framework import (
 
 class windows(pyDFIRRam):
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
-                                filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
+                                filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool) -> None:
         # En dev
         self.cmds = [
             "PsList",
@@ -111,7 +111,10 @@ format = {self.format}
             self.filename = "/tmp/"
         else:
             raise Exception()
-        self.progress = PrintedProgress()
+        if progress:
+            self.progress = PrintedProgress()
+        else:
+            self.progress = MuteProgress()
         self.infofn = ""
 
     def __getattr__(self, key,*args,**kwargs):
@@ -140,8 +143,7 @@ format = {self.format}
                 json.dump(jsondata, fichier)
         else:
             print(type(jsondata))
-            print(json.dumps(jsondata,indent=2))
-            print(json.dumps(jsondata,indent=2))
+            print(jsondata)
             with open(filename, 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata,fichier)
 
@@ -290,8 +292,8 @@ format = {self.format}
                     print("je suis arti",artifact)
                     artifact = {x.translate({32: None}): y for x, y in artifact.items()}
                 print(retkb)
-                exit(1)
-
+            
+            retkb = retkb[funcName]['result']
             self.__save_file(retkb,self.__cache_filename(funcName+args_added))
             return self.__render_outputFormat(retkb)
 
