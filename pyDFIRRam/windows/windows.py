@@ -17,14 +17,14 @@ from volatility3.framework import (
 
 class windows(pyDFIRRam):
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
-                                filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool) -> None:
+                                filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool=False) -> None:
         # En dev
         self.cmds = [
             "PsList",
-            "HiveList",# Prends des arguments {filter, dump}
+            "HiveList",
             "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
-            "Envars",# Prends des arguments {pid, silent}
-            "VerInfo",# Prends des arguments {extensive}
+            "Envars",
+            "VerInfo",
             "MutantScan",
             "BigPools",# Prends des arguments {tags, show-free}
             "HiveScan",
@@ -142,8 +142,6 @@ format = {self.format}
             with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata, fichier)
         else:
-            print(type(jsondata))
-            print(jsondata)
             with open(filename, 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata,fichier)
 
@@ -280,18 +278,13 @@ format = {self.format}
                     }
                 }
             if not args :
-                print("not args")
                 kb = self.__runner(dump_filepath,"plugins",command)
                 retkb = self.__parse_output(kb)
             else:
-                print("je passe ici ")
                 kb =self.__runner(dump_filepath,"plugins",command,args=args)
                 retkb = self.__parse_output(kb)
-                print(retkb)
                 for artifact in retkb:
-                    print("je suis arti",artifact)
                     artifact = {x.translate({32: None}): y for x, y in artifact.items()}
-                print(retkb)
             
             retkb = retkb[funcName]['result']
             self.__save_file(retkb,self.__cache_filename(funcName+args_added))

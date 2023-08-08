@@ -4,3 +4,4 @@
 /rampoetry/*
 */*/__pycache__/
 .vscode/
+*.ipynb
