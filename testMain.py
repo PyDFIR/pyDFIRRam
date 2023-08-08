@@ -1,6 +1,6 @@
 from pyDFIRRam import windows
 import os,json
 winobj = os.getcwd()+"/"+"memdump.mem"
-obj = windows(winobj)
+obj = windows(winobj,Outputformat="dataframe")
 
-obj.PsList(pid=6192)
+print(json.dumps(obj.PsList(),indent=2))

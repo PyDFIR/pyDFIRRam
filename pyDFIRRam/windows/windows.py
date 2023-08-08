@@ -16,25 +16,11 @@ from volatility3.framework import (
 )
 
 class windows(pyDFIRRam):
-
-
-    def PsList(self,**kwargs):
-        """
-
-        Les arguments sont
-            - Physical
-            - PID
-            - dump
-        """
-        if kwargs:
-            print("ok")
-            self.__run_commands("PsList",kwargs)
-        else:
-            self.__run_commands("PsList")
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
                                 filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd()) -> None:
         # En dev
         self.cmds = [
+            "PsList",
             "HiveList",# Prends des arguments {filter, dump}
             "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
             "Envars",# Prends des arguments {pid, silent}
@@ -136,7 +122,6 @@ format = {self.format}
     
     def __in_cache(self,funcName):
         with open(self.__cache_filename(funcName), "r",encoding="UTF-8") as file:
-            print(file)
             content = json.load(file)
         return self.__render_outputFormat(content)
     def __cache_filename(self,func):
@@ -154,12 +139,11 @@ format = {self.format}
             with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(jsondata, fichier)
         else:
-            print(filename)
-            try:
-                with open(filename, 'w',encoding="UTF-8") as fichier:
-                    json.dump(jsondata,fichier)
-            except Exception as e:
-                print(e)
+            print(type(jsondata))
+            print(json.dumps(jsondata,indent=2))
+            print(json.dumps(jsondata,indent=2))
+            with open(filename, 'w',encoding="UTF-8") as fichier:
+                json.dump(jsondata,fichier)
 
     def __render_outputFormat(self,jsondata:dict):
         if self.format=="dataframe":
@@ -294,9 +278,11 @@ format = {self.format}
                     }
                 }
             if not args :
+                print("not args")
                 kb = self.__runner(dump_filepath,"plugins",command)
                 retkb = self.__parse_output(kb)
             else:
+                print("je passe ici ")
                 kb =self.__runner(dump_filepath,"plugins",command,args=args)
                 retkb = self.__parse_output(kb)
                 print(retkb)
