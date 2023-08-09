@@ -18,8 +18,9 @@ from volatility3.framework import (
 class windows(pyDFIRRam):
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
                                 filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool=False) -> None:
-        # En dev
-        self.cmds = [
+        try:
+            os.path.isfile(InvestFile)
+            self.cmds = [
             "PsList",
             "HiveList",
             "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
@@ -71,51 +72,60 @@ class windows(pyDFIRRam):
             "Hivescan",
             "PrintKey"
         ]
-        self.filename = filename
-        Outformat = Outputformat.lower()
-        self.choice = [
-            "json",
-            "dataframe"
-            ]
-        self.savefile = savefile
-        self.filename = filename
-        self.dumpPath = InvestFile
-        self.formatSave = "json"
-        self.outpath = outpath +"/"
-        if Outformat in self.choice:
-            self.format = Outformat
-        self.showconf = showConfig
-        if Outformat in self.choice:
-            self.format = Outformat
-        else:
-            print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
-        if showConfig:
-            print(f"""
+            self.filename = filename
+            Outformat = Outputformat.lower()
+            self.choice = [
+                "json",
+                "dataframe"
+                ]
+            self.savefile = savefile
+            self.filename = filename
+            self.dumpPath = InvestFile
+            self.formatSave = "json"
+            self.outpath = outpath +"/"
+            if Outformat in self.choice:
+                self.format = Outformat
+            self.showconf = showConfig
+            if Outformat in self.choice:
+                self.format = Outformat
+            else:
+                print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
+            if showConfig:
+                self.__print_config()
+            self.allCommands = self.__getFileContent(str(pathlib.Path(__file__).parent) + '/findCommands.json')
+            self.temp, self.plateform = self.__definePlatforms()
+            if progress:
+                self.progress = PrintedProgress()
+            else:
+                self.progress = MuteProgress()
+            self.infofn = ""
+        except Exception as e:
+            print(e)
+        
+    def __print_config(self):
+        print(f"""
 ######################### Config #########################
 Save file = {self.savefile}                             
 format = {self.format}                                   
-##########################################################""") 
-        getcwd = str(pathlib.Path(__file__).parent) + '/findCommands.json'
-        with open(getcwd,'r',encoding="UTF-8") as fichier:
-            content = fichier.read()
-            self.allCommands = json.loads(content)
-        nameos = os.name
-        if nameos == 'nt':
-            self.plateform= "windows"
-            self.temp = ""
-        elif nameos == 'posix':
-            self.plateform = "linux"
-            self.temp = "/tmp/"
-        elif nameos == "darwin" : 
-            self.plateform = "mac"
-            self.filename = "/tmp/"
+##########################################################""")
+    
+    
+    def __definePlatforms(self)-> str:
+        varTempOS = os.name
+        if varTempOS == 'nt':
+            return "ici mettre le path du temp sous windows","windows"
+        elif varTempOS == 'darwin':
+            return "/tmp/","mac"
+        elif varTempOS == 'posix':
+            return "/tmp/","linux"
         else:
             raise Exception()
-        if progress:
-            self.progress = PrintedProgress()
-        else:
-            self.progress = MuteProgress()
-        self.infofn = ""
+
+    
+    def __getFileContent(self,filename) -> dict:
+        with open(filename,'r',encoding="UTF-8") as fichier:
+            content = fichier.read()
+        return json.loads(content)
 
     def __getattr__(self, key,*args,**kwargs):
         if key in self.cmds:

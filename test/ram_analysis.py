@@ -1,4 +1,20 @@
 """
-Ici il y'aura des exemples d'utilisation de pydfirram windows, linux et mac
+Testing for windows
+-------------------
+"""
 
+
+"""
+------------------
+Testing for Linux
+------------------
+"""
+
+
+
+
+"""
+------------------
+Testing for mac
+------------------
 """
