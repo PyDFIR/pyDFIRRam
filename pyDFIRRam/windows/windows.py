@@ -18,60 +18,79 @@ from volatility3.framework import (
 class windows(pyDFIRRam):
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
                                 filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool=False) -> None:
+        """
+        Initialize an instance of MyClass.
+
+        :param InvestFile: Path to the investment file.
+        :type InvestFile: str
+        :param savefile: Flag to indicate whether to save the output to a file, defaults to False.
+        :type savefile: bool
+        :param Outputformat: Output format for saving data (json, dataframe), defaults to "json".
+        :type Outputformat: str
+        :param filename: Name of the output file, defaults to "defaultname".
+        :type filename: str
+        :param showConfig: Flag to display configuration details, defaults to False.
+        :type showConfig: bool
+        :param outpath: Path to the output directory, defaults to the current working directory.
+        :type outpath: str
+        :param progress: Flag to show progress, defaults to False.
+        :type progress: bool
+        :raises Exception: If there is an error during initialization.
+        """
         try:
             os.path.isfile(InvestFile)
             self.cmds = [
-            "PsList",
-            "HiveList",
-            "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
-            "Envars",
-            "VerInfo",
-            "MutantScan",
-            "BigPools",# Prends des arguments {tags, show-free}
-            "HiveScan",
-            "getSids",# Prends des arguments {pid}
-            "VADinfo",# Prends des arguments {address, pid, dump,maxsize}
-            "skeleton_key_check",
-            "Sessions",# Prends des arguments {pid}
-            "Strings",# Prends des arguments {pid, string-file}
-            "GetSetviceSids",
-            "WindowsInfo",
-            "DllList",# Prends des arguments {pid, dump}
-            "NetScan",# Prends des arguments {include-corrupt}
-            "NetStat",# Prends des arguments {include-corrupt}
-            "PoolScanner",
-            "SSDT",
-            "LsaDump",#idk
-            "ModScan",# Prends des arguments {dump}
-            "SymLinkScan",
-            "PsScan",# Prends des arguments {physical, pid, dump}
-            "PsTree",# Prends des arguments {physical, pid}
-            "MBRScan",# Prends des arguments {full}
-            "DumpFiles",# Prends des arguments {physaddr, virtaddr, pid}
-            "VirtMap",
-            "CmdLine",# Prends des arguments {pid}
-            "LdrModules",# Prends des arguments {pid}
-            "CacheDump",
-            "FileScan",
-            "Handles",# Prends des arguments {pid}
-            "VadInfo",# Prends des arguments {address, pid, dump,maxsize}
-            "DriverScan",
-            "DeviceTree",
-            "YaraScan",#idk
-            "VadYaraScan",#idk
-            "SvcScan",#idk
-            "HashDump",
-            "DriverIrp",
-            "CallBacks",
-            "Modules",
-            "Malfind",
-            "MFTscan",
-            "Memmap",
-            "Privs",
-            "UserAssist",
-            "Hivescan",
-            "PrintKey"
-        ]
+                "PsList",
+                "HiveList",
+                "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
+                "Envars",
+                "VerInfo",
+                "MutantScan",
+                "BigPools",# Prends des arguments {tags, show-free}
+                "HiveScan",
+                "getSids",# Prends des arguments {pid}
+                "VADinfo",# Prends des arguments {address, pid, dump,maxsize}
+                "skeleton_key_check",
+                "Sessions",# Prends des arguments {pid}
+                "Strings",# Prends des arguments {pid, string-file}
+                "GetSetviceSids",
+                "WindowsInfo",
+                "DllList",# Prends des arguments {pid, dump}
+                "NetScan",# Prends des arguments {include-corrupt}
+                "NetStat",# Prends des arguments {include-corrupt}
+                "PoolScanner",
+                "SSDT",
+                "LsaDump",#idk
+                "ModScan",# Prends des arguments {dump}
+                "SymLinkScan",
+                "PsScan",# Prends des arguments {physical, pid, dump}
+                "PsTree",# Prends des arguments {physical, pid}
+                "MBRScan",# Prends des arguments {full}
+                "DumpFiles",# Prends des arguments {physaddr, virtaddr, pid}
+                "VirtMap",
+                "CmdLine",# Prends des arguments {pid}
+                "LdrModules",# Prends des arguments {pid}
+                "CacheDump",
+                "FileScan",
+                "Handles",# Prends des arguments {pid}
+                "VadInfo",# Prends des arguments {address, pid, dump,maxsize}
+                "DriverScan",
+                "DeviceTree",
+                "YaraScan",#idk
+                "VadYaraScan",#idk
+                "SvcScan",#idk
+                "HashDump",
+                "DriverIrp",
+                "CallBacks",
+                "Modules",
+                "Malfind",
+                "MFTscan",
+                "Memmap",
+                "Privs",
+                "UserAssist",
+                "Hivescan",
+                "PrintKey"
+            ]
             self.filename = filename
             Outformat = Outputformat.lower()
             self.choice = [
@@ -103,6 +122,13 @@ class windows(pyDFIRRam):
             print(e)
         
     def __print_config(self):
+        """
+        Print the current configuration settings.
+
+        This method prints the current configuration settings of the instance.
+
+        :return: None
+        """
         print(f"""
 ######################### Config #########################
 Save file = {self.savefile}                             
@@ -110,7 +136,17 @@ format = {self.format}
 ##########################################################""")
     
     
-    def __definePlatforms(self)-> str:
+    def __definePlatforms(self)-> tuple:
+        """
+        Define platform-specific settings.
+
+        This method determines the appropriate temporary directory path and platform name
+        based on the operating system.
+
+        :return: A tuple containing the temporary directory path and the platform name.
+        :rtype: tuple[str, str]
+        :raises Exception: If the operating system is not recognized.
+        """
         varTempOS = os.name
         if varTempOS == 'nt':
             return "ici mettre le path du temp sous windows","windows"
@@ -123,21 +159,65 @@ format = {self.format}
 
     
     def __getFileContent(self,filename) -> dict:
+        """
+        Get the content of a JSON file and return it as a dictionary.
+
+        This method reads the content of a JSON file and parses it into a dictionary.
+
+        :param filename: Path to the JSON file.
+        :type filename: str
+        :return: A dictionary containing the parsed JSON data.
+        :rtype: dict
+        """
         with open(filename,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
 
     def __getattr__(self, key,*args,**kwargs):
+        """
+        Handle attribute access for commands.
+
+        This method is called when an attribute that matches a command name is accessed.
+        It returns a lambda function that calls the __run_commands method with the corresponding key.
+
+        :param key: The attribute name (command name).
+        :type key: str
+        :param args: Positional arguments for the method call.
+        :param kwargs: Keyword arguments for the method call.
+        :return: A lambda function that executes the __run_commands method for the given key.
+        """
         if key in self.cmds:
             return lambda : self.__run_commands(key)
         else:
             pass
     
     def __in_cache(self,funcName):
+        """
+        Check if there is cached content for a specific function.
+
+        This method reads the cached content from a file and returns the content
+        in the appropriate output format.
+
+        :param funcName: The name of the function to check for cached content.
+        :type funcName: str
+        :return: The cached content in the specified output format.
+        :rtype: Depends on the format specified.
+        """
         with open(self.__cache_filename(funcName), "r",encoding="UTF-8") as file:
             content = json.load(file)
         return self.__render_outputFormat(content)
     def __cache_filename(self,func):
+        """
+        Generate a cache filename based on function name and system information.
+
+        This method generates a cache filename using the function name, system information,
+        and a timestamp. The filename is used for storing cached content.
+
+        :param func: The name of the function.
+        :type func: str
+        :return: The generated cache filename.
+        :rtype: str
+        """
         self.progress = MuteProgress()
         p = self.Info()
         self.progress = PrintedProgress()
@@ -147,6 +227,19 @@ format = {self.format}
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
     def __save_file(self,jsondata:dict,filename:str):
+        """
+        Save JSON data to a file.
+
+        This method saves the provided JSON data to a file. If `savefile` attribute
+        is True, the filename is derived from the instance's `filename` attribute.
+        Otherwise, the provided `filename` is used.
+
+        :param jsondata: The JSON data to be saved.
+        :type jsondata: dict
+        :param filename: The filename to save the data to.
+        :type filename: str
+        :return: None
+        """
         if self.savefile:
             print(self.filename)
             with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
@@ -156,6 +249,17 @@ format = {self.format}
                 json.dump(jsondata,fichier)
 
     def __render_outputFormat(self,jsondata:dict):
+        """
+        Render JSON data in the specified output format.
+
+        This method takes JSON data and renders it into the desired output format,
+        which can be either "dataframe" or "json".
+
+        :param jsondata: The JSON data to be rendered.
+        :type jsondata: dict
+        :return: The rendered data in the specified output format.
+        :rtype: pandas.DataFrame or dict
+        """
         if self.format=="dataframe":
             try:
                 print("To dataframe")
@@ -168,9 +272,14 @@ format = {self.format}
 
     def __rename_pstree(self,node:dict) -> None:
         """
-            Rename les noeuds du Tree qui nous est envoyé
+        Rename the nodes in the Tree provided.
 
-            :param : node
+        This method recursively renames the nodes in the provided tree by renaming 
+        the 'ImageFileName' key to 'name' and '__children' key to 'children'.
+
+        :param node: The node in the tree to be renamed.
+        :type node: dict
+        :return: None
         """
         if len(node['__children']) == 0:
             node['children'] = node['__children']
@@ -186,31 +295,20 @@ format = {self.format}
                 self.__rename_pstree(children)
     def __build_context(self,investigation_file_path:str, plugin, context, base_config_path,args=None):
         """
-        Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
-        Cette méthode prend en entrée plusieurs paramètres :
-        :param investigation_file_path: str
-            Le chemin du fichier d'investigation à utiliser.
-        :param plugin: str
-            Le nom du plugin à exécuter.
-        :param context: dict
-            Le contexte actuel d'exécution de Volatility3.
-        :param base_config_path: str
-            Le chemin de la configuration de base à utiliser.
-        :return: object
-            L'objet représentant le plugin construit dans le contexte de Volatility3.
-        La méthode construit le contexte d'exécution en suivant ces étapes :
-        1. Récupération des automagics disponibles dans le contexte.
-        2. Sélection des automagics spécifiques requis pour le plugin.
-        3. Configuration du contexte pour utiliser les stackers associés aux automagics sélectionnés.
-        4. Configuration du contexte pour traiter un seul emplacement représenté par le fichier d'investigation.
-        5. Construction du plugin en utilisant les automagics, le plugin lui-même, la configuration de base,
-           un objet "PrintedProgress()" pour suivre le progrès, et un gestionnaire de fichiers spécifique.
-        Si une exception est levée lors de la construction du plugin, elle sera affichée, mais ne stoppera pas
-        l'exécution de la méthode.
-        Note : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
-        directement depuis d'autres parties du code.
-        """
+        Build the context for running a plugin.
 
+        This method constructs the context for running a plugin by setting various configuration options.
+        It also uses automagic functionality and constructs the plugin using the specified arguments.
+
+        :param investigation_file_path: Path to the investigation file.
+        :type investigation_file_path: str
+        :param plugin: The plugin to be run.
+        :param context: The context to be used.
+        :param base_config_path: Path to the base configuration file.
+        :param args: Arguments for the plugin, defaults to None.
+        :type args: dict, optional
+        :return: The constructed plugin context.
+        """
         avail_automagics = automagic.available(context)
         automagics = automagic.choose_automagic(avail_automagics,plugin)
         context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
@@ -235,22 +333,41 @@ format = {self.format}
         except Exception as e:
             print(e)
         return constructed
-    def __getPlugins(self) -> None:
+    def __getPlugins(self) -> volatility3.framework:
+        """
+        Get the list of available plugins.
+
+        This method imports the plugins and retrieves the list of available plugins.
+
+        :return: The list of available plugins.
+        :rtype: list
+        """
         try:
             failures = volatility3.framework.import_files(plugins,True)
         except:
             print("Unable to get plugins")
         return volatility3.framework.list_plugins()
-    def __parse_output(self,commandToExec):
-        for runable in commandToExec:
-            commandToExec_entry = commandToExec[runable]
-            if commandToExec_entry['constructed']:
+    
+    def __parse_output(self,commands_to_execute):
+        """
+        Parse the output of executed commands.
+
+        This method takes a dictionary of commands to execute, runs each constructed command,
+        and renders the results as JSON. The results are stored back in the dictionary.
+
+        :param commands_to_execute: A dictionary of commands to execute.
+        :type commands_to_execute: dict
+        :return: The updated dictionary with command results.
+        :rtype: dict
+        """
+        for runnable, command_entry in commands_to_execute.items():
+            if command_entry['constructed']:
                 try:
-                    result = VolatilityUtils.JsonRenderer().render(commandToExec_entry['constructed'].run())
-                    commandToExec_entry['result'] = result
+                    result = VolatilityUtils.JsonRenderer().render(command_entry['constructed'].run())
+                    command_entry['result'] = result
                 except Exception as e:
                     print(f"Error in run: {e}")
-        return commandToExec
+        return commands_to_execute
     
     def __runner(self,dump_filepath,base_config_path,kb,args=None):
         for runable in kb:
