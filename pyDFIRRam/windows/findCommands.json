@@ -131,8 +131,8 @@
     "Malfind":{
         "plugin":"volatility3.framework.plugins.windows.malfind.Malfind"
     },
-    "MFTscan":{
-        "plugin":"volatility3.framework.plugins.windows.mftscan.MFTScan"
+    "mftscan":{
+        "plugin":"volatility3.framework.plugins.windows.mftscan"
     },
     "Memmap":{
         "plugin":"volatility3.framework.plugins.windows.memmap.Memmap"

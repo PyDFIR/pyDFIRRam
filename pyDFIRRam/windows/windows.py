@@ -13,10 +13,13 @@ from volatility3.framework import (
     automagic,
     contexts,
     plugins,
+    constants
 )
+import pandas as pd
+import pyarrow.parquet as pq
 
 class windows(pyDFIRRam):
-    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json" ,
+    def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json",
                                 filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool=False) -> None:
         """
         Initialize an instance of MyClass.
@@ -84,7 +87,7 @@ class windows(pyDFIRRam):
                 "CallBacks",
                 "Modules",
                 "Malfind",
-                "MFTscan",
+                "mftscan",
                 "Memmap",
                 "Privs",
                 "UserAssist",
@@ -191,21 +194,23 @@ format = {self.format}
         else:
             pass
     
-    def __in_cache(self,funcName):
+    def __in_cache(self, funcName):
         """
         Check if there is cached content for a specific function.
-
+    
         This method reads the cached content from a file and returns the content
         in the appropriate output format.
-
+    
         :param funcName: The name of the function to check for cached content.
         :type funcName: str
         :return: The cached content in the specified output format.
         :rtype: Depends on the format specified.
         """
-        with open(self.__cache_filename(funcName), "r",encoding="UTF-8") as file:
-            content = json.load(file)
+        parquet_filename = self.__cache_filename(funcName) + ".parquet"
+        table = pq.read_table(parquet_filename)
+        content = table.to_pandas()
         return self.__render_outputFormat(content)
+
     def __cache_filename(self,func):
         """
         Generate a cache filename based on function name and system information.
@@ -226,27 +231,16 @@ format = {self.format}
         timestamp = str(int(dateOnSys.timestamp())) 
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
-    def __save_file(self,jsondata:dict,filename:str):
-        """
-        Save JSON data to a file.
 
-        This method saves the provided JSON data to a file. If `savefile` attribute
-        is True, the filename is derived from the instance's `filename` attribute.
-        Otherwise, the provided `filename` is used.
-
-        :param jsondata: The JSON data to be saved.
-        :type jsondata: dict
-        :param filename: The filename to save the data to.
-        :type filename: str
-        :return: None
-        """
+    def __save_file(self,out_dataframe,filename:str):
         if self.savefile:
             print(self.filename)
             with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
-                json.dump(jsondata, fichier)
+                json.dump(out_dataframe, fichier)
         else:
             with open(filename, 'w',encoding="UTF-8") as fichier:
-                json.dump(jsondata,fichier)
+                json.dump(out_dataframe,fichier)
+
 
     def __render_outputFormat(self,jsondata:dict):
         """
@@ -313,7 +307,6 @@ format = {self.format}
         automagics = automagic.choose_automagic(avail_automagics,plugin)
         context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
         context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
-        
         if args is not None:
             frind = (str(plugin).split(".")[-1])[:-2]
             for k,v in args.items():
@@ -333,6 +326,7 @@ format = {self.format}
         except Exception as e:
             print(e)
         return constructed
+
     def __getPlugins(self) -> volatility3.framework:
         """
         Get the list of available plugins.
@@ -390,7 +384,6 @@ format = {self.format}
     def __run_commands(self,funcName,args:list = None):
         args_added = ""
         if args:
-            
             for k,v in args.items():
                 args_added += str(k) +str(v)
         if os.path.isfile(self.__cache_filename(funcName+args_added)):
@@ -538,10 +531,8 @@ format = {self.format}
         return data
 
     def Info(self)-> dict:
-        if os.path.isfile(self.infofn):
-            with open(self.infofn,"r",encoding="UTF-8") as file:
-                content = json.load(file)
-            return content
+        if os.path.isfile(self.__cache_filename(funcName+args_added)):
+            return self.__in_cache(funcName+args_added)
         else:
             dump_filepath = self.dumpPath
             plugin_list = self.__getPlugins()
