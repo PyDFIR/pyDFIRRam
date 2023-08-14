@@ -22,7 +22,7 @@ class windows(pyDFIRRam):
     def __init__(self,InvestFile,savefile:bool = False,Outputformat:str ="json",
                                 filename:str ="defaultname",showConfig=False,outpath:str = os.getcwd(), progress:bool=False) -> None:
         """
-        Initialize an instance of MyClass.
+        Initialize an instance of Windows.
 
         :param InvestFile: Path to the investment file.
         :type InvestFile: str
@@ -40,6 +40,7 @@ class windows(pyDFIRRam):
         :type progress: bool
         :raises Exception: If there is an error during initialization.
         """
+
         try:
             os.path.isfile(InvestFile)
             self.cmds = [
@@ -410,14 +411,14 @@ format = {self.format}
             self.__save_file(retkb,self.__cache_filename(funcName+args_added))
             return self.__render_outputFormat(retkb)
 
-    def build_contextDump(self,dump_path, context, base_config_path:str, plugin:str, output_path:str):
+    """def build_contextDump(self,dump_path, context, base_config_path:str, plugin:str, output_path:str):
         avail_automagics = automagic.available(context)
         automagics = automagic.choose_automagic(avail_automagics, plugin)
         context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
         context.config['automagic.LayerStacker.single_location'] = f"file://{dump_path}"
         constructed = plugins.construct_plugin(context, automagics, plugin, base_config_path,
                                                MuteProgress(), VolatilityUtils.create_file_handler(output_path))
-        return constructed
+        return constructed"""
 
     def DumpFiles(self, offset: list):
         data = []
@@ -447,7 +448,7 @@ format = {self.format}
                 }
                 plugin_list = volatility3.framework.list_plugins()
                 try:
-                    constructed = self.build_contextDump(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
+                    constructed = self.build_context(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
                 except Exception as e:
                     print(e)
                 if constructed:
