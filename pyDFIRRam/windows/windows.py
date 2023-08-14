@@ -531,6 +531,8 @@ format = {self.format}
         return data
 
     def Info(self)-> dict:
+        funcName = "Info"
+        args_added = ""
         if os.path.isfile(self.__cache_filename(funcName+args_added)):
             return self.__in_cache(funcName+args_added)
         else:
