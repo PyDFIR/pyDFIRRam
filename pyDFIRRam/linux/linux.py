@@ -150,7 +150,7 @@ class linux(pyDFIRRam):
         try:
             if self.progress == PrintedProgress():
                 print("plugin: ", (str(plugin).split(".")[-1])[:-2])
-            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,volatility_utils.file_handler(investigation_file_path))
+            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,VolatilityUtils.file_handler(investigation_file_path))
             if self.progress == PrintedProgress():
                 print("")
         except Exception as e:
@@ -167,7 +167,7 @@ class linux(pyDFIRRam):
             commandToExec_entry = commandToExec[runable]
             if commandToExec_entry['constructed']:
                 try:
-                    result = volatility_utils.DictRenderer().render(commandToExec_entry['constructed'].run())
+                    result = VolatilityUtils.DictRenderer().render(commandToExec_entry['constructed'].run())
                     commandToExec_entry['result'] = result
                 except Exception as e:
                     print(f"Error in run: {e}")
@@ -213,30 +213,30 @@ class linux(pyDFIRRam):
     def DumpFiles(self,offset:list):
         def DumpFiles_build_context(self,investigation_file_path, plugin, context, base_config_path,output_paths):
             """
-        Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
-        Cette méthode prend en entrée plusieurs paramètres :
-        :param investigation_file_path: str
-            Le chemin du fichier d'investigation à utiliser.
-        :param plugin: str
-            Le nom du plugin à exécuter.
-        :param context: dict
-            Le contexte actuel d'exécution de Volatility3.
-        :param base_config_path: str
-            Le chemin de la configuration de base à utiliser.
-        :return: object
-            L'objet représentant le plugin construit dans le contexte de Volatility3.
-        La méthode construit le contexte d'exécution en suivant ces étapes :
-        1. Récupération des automagics disponibles dans le contexte.
-        2. Sélection des automagics spécifiques requis pour le plugin.
-        3. Configuration du contexte pour utiliser les stackers associés aux automagics sélectionnés.
-        4. Configuration du contexte pour traiter un seul emplacement représenté par le fichier d'investigation.
-        5. Construction du plugin en utilisant les automagics, le plugin lui-même, la configuration de base,
-           un objet "PrintedProgress()" pour suivre le progrès, et un gestionnaire de fichiers spécifique.
-        Si une exception est levée lors de la construction du plugin, elle sera affichée, mais ne stoppera pas
-        l'exécution de la méthode.
-        Note : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
-        directement depuis d'autres parties du code.
-        """
+            Construit le contexte d'exécution pour un plugin spécifique dans Volatility3.
+            Cette méthode prend en entrée plusieurs paramètres :
+            :param investigation_file_path: str
+                Le chemin du fichier d'investigation à utiliser.
+            :param plugin: str
+                Le nom du plugin à exécuter.
+            :param context: dict
+                Le contexte actuel d'exécution de Volatility3.
+            :param base_config_path: str
+                Le chemin de la configuration de base à utiliser.
+            :return: object
+                L'objet représentant le plugin construit dans le contexte de Volatility3.
+            La méthode construit le contexte d'exécution en suivant ces étapes :
+            1. Récupération des automagics disponibles dans le contexte.
+            2. Sélection des automagics spécifiques requis pour le plugin.
+            3. Configuration du contexte pour utiliser les stackers associés aux automagics sélectionnés.
+            4. Configuration du contexte pour traiter un seul emplacement représenté par le fichier d'investigation.
+            5. Construction du plugin en utilisant les automagics, le plugin lui-même, la configuration de base,
+               un objet "PrintedProgress()" pour suivre le progrès, et un gestionnaire de fichiers spécifique.
+            Si une exception est levée lors de la construction du plugin, elle sera affichée, mais ne stoppera pas
+            l'exécution de la méthode.
+            Note : Cette méthode est destinée à être utilisée en interne par Volatility3 et ne doit pas être appelée
+            directement depuis d'autres parties du code.
+            """
             avail_automagics = automagic.available(context)
             automagics = automagic.choose_automagic(avail_automagics,plugin)
             context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
@@ -244,7 +244,7 @@ class linux(pyDFIRRam):
             try:
                 if self.progress == PrintedProgress():
                     print("plugin: ", (str(plugin).split(".")[-1])[:-2])
-                constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,volatility_utils.file_handler(output_paths))
+                constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,VolatilityUtils.file_handler(output_paths))
                 if self.progress == PrintedProgress():
                     print("")
             except Exception as e:
@@ -266,7 +266,7 @@ class linux(pyDFIRRam):
                 automagics = automagic.choose_automagic(available_automagics, plugin)
                 context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
                 context.config['automagic.LayerStacker.single_location'] = "file://"+dump_path
-                constructed = plugins.construct_plugin(context, automagics, plugin, base_config_path, MuteProgress(), volatility_utils.file_handler(output_path))
+                constructed = plugins.construct_plugin(context, automagics, plugin, base_config_path, MuteProgress(), VolatilityUtils.file_handler(output_path))
                 return constructed
             data=[]
             for e in offset:
@@ -290,13 +290,13 @@ class linux(pyDFIRRam):
                 except:
                     pass
                 if constructed:
-                    result = volatility_utils.DictRenderer().render(constructed.run())
+                    result = VolatilityUtils.DictRenderer().render(constructed.run())
                     if len(result) < 1:
                         del (context.config['plugins.DumpFiles.virtaddr'])
                         context.config['plugins.DumpFiles.physaddr'] = int(e)
                         constructed = build_context(self.dumpPath, context, base_config_path,
                                                     plugin_list['windows.dumpfiles.DumpFiles'], output_path)
-                        result =volatility_utils.DictRenderer().render(constructed.run())
+                        result =VolatilityUtils.DictRenderer().render(constructed.run())
                 for artifact in result:
                     artifact = {x.translate({32: None}): y
                                 for x, y in artifact.items()}

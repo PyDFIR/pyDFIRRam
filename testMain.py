@@ -1,6 +1,6 @@
 from pyDFIRRam import windows
 import os,json
-winobj = os.getcwd()+"/"+"memdump.mem"
+winobj = "/home/remnux/Desktop/project/2600/memdump.mem"
 obj = windows(winobj,Outputformat="dataframe")
 
-print(obj.mftscan())
+obj.PsList()
