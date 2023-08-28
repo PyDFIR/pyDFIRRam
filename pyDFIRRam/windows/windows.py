@@ -1,15 +1,22 @@
 from datetime import datetime
+import pathlib,json
+
 import volatility3.plugins
 import volatility3.symbols
-import pathlib,json
-from pyDFIRRam.VolatilityUtils.VolatilityUtils import *
-from pyDFIRRam.core.core import *
+
+#PyDFIRModules
+from pyDFIRRam.core.core import build_context,run_commands,getPlugins
+from pyDFIRRam.utils.handler.handler import *
+from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer
+
+
 from pyDFIRRam import pyDFIRRam
 from volatility3.cli import (
     PrintedProgress,
     MuteProgress
 )
 from volatility3.framework import (
+    automagic,
     contexts,
     plugins,
 )
@@ -130,6 +137,7 @@ class windows(pyDFIRRam):
         :return: The cached content in the specified output format.
         :rtype: Depends on the format specified.
         """
+        import pyarrow.parquet as pq
         parquet_filename = self.cache_filename(funcName) + ".parquet"
         table = pq.read_table(parquet_filename)
         content = table.to_pandas()
@@ -150,7 +158,7 @@ class windows(pyDFIRRam):
         p = self.Info()
         self.progress = PrintedProgress()
         productSys = p["NtProductType"]
-        dateOnSys = datetime.datetime.strptime(p["SystemTime"], "%Y-%m-%d %H:%M:%S")
+        dateOnSys = datetime.strptime(p["SystemTime"], "%Y-%m-%d %H:%M:%S")
         timestamp = str(int(dateOnSys.timestamp())) 
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
@@ -184,11 +192,10 @@ class windows(pyDFIRRam):
         """
         if key in self.cmds:
             filename = self.__cache_filename(key)
-            print(filename)
             if os.path.isfile(filename):
                 return self.__in_cache(key)
             else :
-                return lambda : core.run_commands(self,key,filename)
+                return lambda : run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile)
             
     def __print_config(self):
         """
@@ -256,7 +263,7 @@ format = {self.format}
         try:
             if self.progress == PrintedProgress():
                 print("plugin: ", (str(plugin).split(".")[-1])[:-2])
-            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,VolatilityUtils.create_file_handler(investigation_file_path))
+            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,Handler.create_file_handler(investigation_file_path))
             if self.progress == PrintedProgress():
                 print("")
             return constructed
@@ -291,27 +298,16 @@ format = {self.format}
                 json.dump(out_dataframe,fichier)
     
 
-    def parse_output(self,commands_to_execute):
-        """
-        Parse the output of executed commands.
-
-        This method takes a dictionary of commands to execute, runs each constructed command,
-        and renders the results as JSON. The results are stored back in the dictionary.
-
-        :param commands_to_execute: A dictionary of commands to execute.
-        :type commands_to_execute: dict
-        :return: The updated dictionary with command results.
-        :rtype: dict
-        """
+    """   def parse_output(self,commands_to_execute):
         print(commands_to_execute)
         for runnable, command_entry in commands_to_execute.items():
             if command_entry['constructed']:
                 try:
-                    result = VolatilityUtils.JsonRenderer().render(command_entry['constructed'].run())
+                    result = JsonRenderer().render(command_entry['constructed'].run())
                     command_entry['result'] = result
                 except Exception as e:
                     print(f"Error in run: {e}")
-        return commands_to_execute
+        return commands_to_execute"""
 
     
     def __rename_pstree(self,node:dict) -> None:
@@ -359,7 +355,7 @@ format = {self.format}
                 context = contexts.Context()
                 context.config['plugins.DumpFiles.virtaddr'] = int(e)
                 command = self.allCommands["DumpFiles"]["plugin"]
-                plugin_list = core.getPlugins()
+                plugin_list = getPlugins()
                 command = {
                     'DumpFiles': {
                         'plugin': plugin_list[command]
@@ -367,16 +363,16 @@ format = {self.format}
                 }
                 plugin_list = volatility3.framework.list_plugins()
                 try:
-                    constructed = core.build_context(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
+                    constructed = build_context(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
                 except Exception as e:
                     print(e)
                 if constructed:
-                    result = VolatilityUtils.JsonRenderer().render(constructed.run())
+                    result = JsonRenderer().render(constructed.run())
                     if len(result) < 1:
                         del context.config['plugins.DumpFiles.virtaddr']
                         context.config['plugins.DumpFiles.physaddr'] = int(e)
-                        constructed = core.build_context(self.dumpPath, context, base_config_path,plugin_list['windows.dumpfiles.DumpFiles'], output_path)
-                        result = VolatilityUtils.JsonRenderer().render(constructed.run())
+                        constructed =build_context(self.dumpPath, context, base_config_path,plugin_list['windows.dumpfiles.DumpFiles'], output_path)
+                        result =JsonRenderer().render(constructed.run())
                 for artifact in result:
                     artifact = {x.translate({32: None}): y for x, y in artifact.items()}
                 data.append(result)
@@ -390,7 +386,7 @@ format = {self.format}
         for funcName in commandToExec:
             if self.showconf:
                 print("Fonction en cours: ",funcName)
-            t= core.run_commands(funcName)
+            t= run_commands(funcName)
             data.append(t)
         return data
 
@@ -402,7 +398,7 @@ format = {self.format}
             return content
         else:
             dump_filepath = self.dumpPath
-            plugin_list = core.getPlugins()
+            plugin_list = getPlugins()
             command = self.allCommands["WindowsInfo"]["plugin"]
             command = {
                 'Info':{
@@ -410,7 +406,7 @@ format = {self.format}
                     }
                 }
             kb = self.runner(dump_filepath,"plugins",command)
-            retkb = self.parse_output(kb)
+            retkb = parse_output(kb)
             retkb = retkb['Info']['result']
             header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
             index = 0
@@ -419,7 +415,7 @@ format = {self.format}
                 data[k] = retkb[index]["Value"]
                 index += 1 
             productSys = data["NtProductType"]
-            dateOnSys = datetime.datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
+            dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
             timestamp = str(int(dateOnSys.timestamp())) 
             self.filename = "/tmp/"+productSys+timestamp+"Info.json"
             self.save_file(data,self.filename)

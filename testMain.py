@@ -3,4 +3,4 @@ import os,json
 winobj = "/home/remnux/Desktop/project/2600/memdump.mem"
 obj = windows(winobj,Outputformat="dataframe")
 
-obj.PsList()
+print(obj.PsList())
