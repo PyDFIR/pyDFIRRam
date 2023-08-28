@@ -7,7 +7,7 @@ import volatility3.symbols
 #PyDFIRModules
 from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner
 from pyDFIRRam.utils.handler.handler import *
-from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer
+from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 
 
 from pyDFIRRam import pyDFIRRam
@@ -137,11 +137,14 @@ class windows(pyDFIRRam):
         :return: The cached content in the specified output format.
         :rtype: Depends on the format specified.
         """
-        import pyarrow.parquet as pq
-        parquet_filename = self.cache_filename(funcName) + ".parquet"
-        table = pq.read_table(parquet_filename)
+        parquet_filename = self.__cache_filename(funcName)
+        with open(parquet_filename) as f:
+            data = json.load(f)
+        return render_outputFormat(self.format, data)
+
+        """table = pq.read_table(parquet_filename)
         content = table.to_pandas()
-        return self.render_outputFormat(content)
+        return self.render_outputFormat(content)"""
     def __cache_filename(self,func):
         """
         Generate a cache filename based on function name and system information.
@@ -193,7 +196,7 @@ class windows(pyDFIRRam):
         if key in self.cmds:
             filename = self.__cache_filename(key)
             if os.path.isfile(filename):
-                return self.__in_cache(key)
+                return lambda : self.__in_cache(key)
             else :
                 return lambda : run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile)
             
