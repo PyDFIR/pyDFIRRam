@@ -5,7 +5,7 @@ import volatility3.plugins
 import volatility3.symbols
 
 #PyDFIRModules
-from pyDFIRRam.core.core import build_context,run_commands,getPlugins
+from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer
 
@@ -232,61 +232,7 @@ format = {self.format}
         else:
             raise Exception()
     
-    def build_context(self,investigation_file_path:str, plugin, context, base_config_path,args=None):
-        """
-        Build the context for running a plugin.
-        This method constructs the context for running a plugin by setting various configuration options.
-        It also uses automagic functionality and constructs the plugin using the specified arguments.
-        :param investigation_file_path: Path to the investigation file.
-        :type investigation_file_path: str
-        :param plugin: The plugin to be run.
-        :param context: The context to be used.
-        :param base_config_path: Path to the base configuration file.
-        :param args: Arguments for the plugin, defaults to None.
-        :type args: dict, optional
-        :return: The constructed plugin context.
-        """
-        avail_automagics = automagic.available(context)
-        automagics = automagic.choose_automagic(avail_automagics,plugin)
-        context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
-        context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
-        if args is not None:
-            frind = (str(plugin).split(".")[-1])[:-2]
-            for k,v in args.items():
-                plugged = self.allCommands[frind]["plugin"] +"."+ str(k)
-                print(int(v))
-                try :
-                    print(plugged)
-                    context.config[plugged] = v
-                except Exception as exxx:
-                    print(exxx)
-        try:
-            if self.progress == PrintedProgress():
-                print("plugin: ", (str(plugin).split(".")[-1])[:-2])
-            constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,self.progress,Handler.create_file_handler(investigation_file_path))
-            if self.progress == PrintedProgress():
-                print("")
-            return constructed
-        except Exception as e:
-            print(e)
-
-    def runner(self,dump_filepath,base_config_path,kb,args=None):
-        for runable in kb:
-            if args is not None:
-                context = contexts.Context()
-                kb[runable]['constructed'] = self.build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path,args=args)
-            else:
-                context = contexts.Context()
-                kb[runable]['constructed'] = self.build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path)
-        
-        for runable in kb:
-            if kb[runable]['constructed']:
-                try:
-                    kb[runable]['result'] = kb[runable]['constructed'].run()
-                    return kb
-                except Exception as exceptionHandler:
-                    print("error in run\n Expception:",exceptionHandler)
-                    pass
+    
     
     def save_file(self,out_dataframe,filename:str):
         if self.savefile:
@@ -297,17 +243,6 @@ format = {self.format}
             with open(filename, 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe,fichier)
     
-
-    """   def parse_output(self,commands_to_execute):
-        print(commands_to_execute)
-        for runnable, command_entry in commands_to_execute.items():
-            if command_entry['constructed']:
-                try:
-                    result = JsonRenderer().render(command_entry['constructed'].run())
-                    command_entry['result'] = result
-                except Exception as e:
-                    print(f"Error in run: {e}")
-        return commands_to_execute"""
 
     
     def __rename_pstree(self,node:dict) -> None:
@@ -405,7 +340,8 @@ format = {self.format}
                     'plugin':plugin_list[command]
                     }
                 }
-            kb = self.runner(dump_filepath,"plugins",command)
+            
+            kb = runner(dump_filepath,"plugins",command,self.allCommands,self.progress)
             retkb = parse_output(kb)
             retkb = retkb['Info']['result']
             header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
