@@ -52,7 +52,7 @@ class JsonRenderer(text_renderer.CLIRenderer):
             else:
                 grid.visit(node=None, function=visitor, initial_accumulator=final_output)
             return final_output[1]
-
+        
 def parse_output(commands_to_execute):
         """
         Parse the output of executed commands.
@@ -74,6 +74,7 @@ def parse_output(commands_to_execute):
                     print(f"Error in run: {e}")
         return commands_to_execute
 
+# Faut faire une classe ici
 def render_outputFormat(format,jsondata:dict):
     if format=="dataframe":
             try:

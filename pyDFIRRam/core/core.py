@@ -151,4 +151,7 @@ def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile
                 artifact = {x.translate({32: None}): y for x, y in artifact.items()}
         retkb = retkb[funcName]['result']
         save_file(retkb,cache_filename+args_added,savefile,cache_filename)
+        print(funcName)
+        if funcName == "PsTree":
+            format = "json"
         return render_outputFormat(format,retkb)
