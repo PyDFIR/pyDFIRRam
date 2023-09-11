@@ -5,7 +5,7 @@ import volatility3.plugins
 import volatility3.symbols
 
 #PyDFIRModules
-from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner
+from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 
@@ -140,7 +140,12 @@ class windows(pyDFIRRam):
         parquet_filename = self.__cache_filename(funcName)
         with open(parquet_filename) as f:
             data = json.load(f)
-        return render_outputFormat(self.format, data)
+        format_file = self.format
+        if funcName == "PsTree":
+            format_file = "json"
+            return json_to_graph(data)
+        else: 
+            return render_outputFormat(format_file, data)
 
         """table = pq.read_table(parquet_filename)
         content = table.to_pandas()

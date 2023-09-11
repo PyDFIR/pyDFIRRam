@@ -3,8 +3,7 @@ import os,json
 winobj = "/home/remnux/Desktop/project/2600/memdump.mem"
 obj = windows(winobj,Outputformat="dataframe")
 #Test PsList
-print("PsTree:")
-print(obj.PsTree())
+print(json.dumps(obj.PsTree(),indent=2))
 #print("HiveList:")
 #print(obj.HiveList())
 #print("Envars:")

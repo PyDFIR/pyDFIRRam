@@ -1,3 +1,4 @@
+from graphviz import Digraph
 import pandas,json
 import pyarrow.parquet as pq
 
@@ -154,4 +155,22 @@ def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile
         print(funcName)
         if funcName == "PsTree":
             format = "json"
-        return render_outputFormat(format,retkb)
+            return json_to_graph(retkb)
+        else:
+            return render_outputFormat(format,retkb)
+    
+# Create a function to_graph() that take a array of dictionaries andd iterate recursively over it to create a graphviz.Graph using '__children' key to add subnodes to the pqrent node
+def json_to_graph(res: list, graph=None, node_parent=None) -> Digraph:
+    if graph is None:
+        graph = Digraph()
+    for parent in res:
+        graph.node(str(parent["PID"]), label=parent["ImageFileName"])
+        if node_parent is not None:
+            graph.edge(str(node_parent["PID"]), str(parent["PID"]), label='SubProcess')
+        for node in parent["__children"]:
+            graph.node(str(node["PID"]), label=node["ImageFileName"])
+            graph.edge(str(parent["PID"]), str(node['PID']), label='SubProcess')
+            if '__children' in node:
+                # TODO: graph = ?
+                json_to_graph(node['__children'], graph, node)
+    return graph
