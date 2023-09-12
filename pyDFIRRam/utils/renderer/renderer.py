@@ -1,4 +1,5 @@
 import datetime,pandas
+from graphviz import Digraph
 from typing import Dict, Any, List, Tuple,Optional
 import volatility3.symbols
 from volatility3.framework.renderers import format_hints
@@ -84,3 +85,17 @@ def render_outputFormat(format,jsondata:dict):
                 return jsondata
     elif format == "json":
         return jsondata
+
+def json_to_graph(res: list, graph=None, node_parent=None) -> Digraph:
+    if graph is None:
+        graph = Digraph()
+    for parent in res:
+        graph.node(str(parent["PID"]), label=parent["ImageFileName"])
+        if node_parent is not None:
+            graph.edge(str(node_parent["PID"]), str(parent["PID"]), label='SubProcess')
+        for node in parent["__children"]:
+            graph.node(str(node["PID"]), label=node["ImageFileName"])
+            graph.edge(str(parent["PID"]), str(node['PID']), label='SubProcess')
+            if '__children' in node:
+                json_to_graph(node['__children'], graph, node)
+    return graph
