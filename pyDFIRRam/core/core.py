@@ -56,6 +56,7 @@ def build_context(investigation_file_path:str, plugin, context, base_config_path
     """
     avail_automagics = automagic.available(context)
     automagics = automagic.choose_automagic(avail_automagics,plugin)
+    
     context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
     context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
     if args is not None:
@@ -107,13 +108,11 @@ def parse_output(commands_to_execute):
             except Exception as e:
                 print(f"Error in run: {e}")
     return commands_to_execute
-def runner(dump_filepath,base_config_path,kb,AllCommands,progress,args=None):
+def runner(dump_filepath,base_config_path,kb,AllCommands,progress,context,args=None):
     for runable in kb:
         if args is not None:
-            context = contexts.Context()
             kb[runable]['constructed'] = build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path,AllCommands,progress=progress,args=args)
         else:
-            context = contexts.Context()
             kb[runable]['constructed'] = build_context(dump_filepath,kb[runable]['plugin'],context,base_config_path,AllCommands,progress=progress)
     for runable in kb:
         if kb[runable]['constructed']:
@@ -123,38 +122,59 @@ def runner(dump_filepath,base_config_path,kb,AllCommands,progress,args=None):
             except Exception as exceptionHandler:
                 print("error in run\n Expception:",exceptionHandler)
                 pass
-            
-def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile,args:list=None):
+
+def parameters_context():
+    pass        
+def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile,**kwargs):
     cache_filename = filename
     args_added = ""
-    if args:
-        for k,v in args.items():
-            args_added += str(k) +str(v)
-    else:
-        args_added = ""
-        # Ici a voir pour passer en parametre
-        dump_filepath = dumpPath
-        command = allCommands[funcName]["plugin"]
-        plugin_list = getPlugins()
-        command = {
-            funcName:{
-                'plugin':plugin_list[command]
-                }
+    #Variable Args de debug
+    args =None
+    #Prendre en charge les kwargs pour les fonctions, mettre ensuite des definitions pour ces arguments
+    # Pour ca il faut se referer a la docs pour savoir ce que nous pouvons prendre comme argument pour chaque fonction
+    print(allCommands[funcName]["param"].keys())
+    if kwargs:
+        try:
+            allPossibleArgs = set(allCommands[funcName]["param"].keys())
+            kw = set(kwargs.keys())
+            if kw.issubset(allPossibleArgs):
+                value_key= list(kw)[0]
+                value_kw = kwargs.get(value_key)
+                value = allCommands[funcName]["param"][value_key]
+                context = contexts.Context()
+            else:
+                print("Les arguments demandee sont:",allCommands[funcName]["param"])
+        except Exception as e:
+            print("Aucune de parametres n'est pris en charge par cette fonctions. Les parametres sont les suivantes",allPossibleArgs)
+    try:
+        context.config[allCommands[funcName]["param"][value_key]] = value_kw
+    except:
+        print("error")
+    exit(1)
+    context = contexts.Context()
+    args_added = ""
+    # Ici a voir pour passer en parametre
+    dump_filepath = dumpPath
+    command = allCommands[funcName]["plugin"]
+    plugin_list = getPlugins()
+    command = {
+        funcName:{
+            'plugin':plugin_list[command]
             }
-        if not args :
-            kb = runner(dump_filepath,"plugins",command,allCommands,progress)
-            retkb = parse_output(kb)
-        else:
-            kb =runner(dump_filepath,"plugins",command,args=args)
-            retkb = parse_output(kb)
-            for artifact in retkb:
-                artifact = {x.translate({32: None}): y for x, y in artifact.items()}
-        retkb = retkb[funcName]['result']
-        save_file(retkb,cache_filename+args_added,savefile,cache_filename)
-        print(funcName)
-        if funcName == "PsTree":
-            format = "json"
-            return json_to_graph(retkb)
-        else:
-            return render_outputFormat(format,retkb)
+        }
+    if not args :
+        kb = runner(dump_filepath,"plugins",command,allCommands,progress,context)
+        retkb = parse_output(kb)
+    else:
+        kb =runner(dump_filepath,"plugins",command,args=args)
+        retkb = parse_output(kb)
+        for artifact in retkb:
+            artifact = {x.translate({32: None}): y for x, y in artifact.items()}
+    retkb = retkb[funcName]['result']
+    #save_file(retkb,cache_filename+args_added,savefile,cache_filename)
+    if funcName == "PsTree":
+        format = "json"
+        return json_to_graph(retkb)
+    else:
+        return render_outputFormat(format,retkb)
     

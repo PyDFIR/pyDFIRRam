@@ -185,7 +185,7 @@ class windows(pyDFIRRam):
         with open(filename,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
-    def __getattr__(self, key):
+    def __getattr__(self, key,**kwargs):
         """
         Handle attribute access for commands.
 
@@ -203,7 +203,7 @@ class windows(pyDFIRRam):
             if os.path.isfile(filename):
                 return lambda : self.__in_cache(key)
             else :
-                return lambda : run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile)
+                return lambda **kwargs: run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
             
     def __print_config(self):
         """
@@ -348,8 +348,8 @@ format = {self.format}
                     'plugin':plugin_list[command]
                     }
                 }
-            
-            kb = runner(dump_filepath,"plugins",command,self.allCommands,self.progress)
+            context = contexts.Context()
+            kb = runner(dump_filepath,"plugins",command,self.allCommands,self.progress,context)
             retkb = parse_output(kb)
             retkb = retkb['Info']['result']
             header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
@@ -360,8 +360,9 @@ format = {self.format}
                 index += 1 
             productSys = data["NtProductType"]
             dateOnSys = datetime.strptime(data["SystemTime"], "%Y-%m-%d %H:%M:%S")
-            timestamp = str(int(dateOnSys.timestamp())) 
+            timestamp = str(int(dateOnSys.timestamp()))
+            # ci-dessous a modifier, pas propre
             self.filename = "/tmp/"+productSys+timestamp+"Info.json"
-            self.save_file(data,self.filename)
+            #self.save_file(data,self.filename)
             self.infofn = self.filename
             return data

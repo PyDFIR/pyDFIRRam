@@ -6,7 +6,10 @@
         "plugin":"windows.registry.hivelist.HiveList"
     },
     "Crashinfo":{
-        "plugin":"volatility3.framework.plugins.windows.crashinfo.Crashinfo"
+        "plugin":"volatility3.framework.plugins.windows.crashinfo.Crashinfo",
+        "param":{
+            "pid":"plugins.crashinfo.pid"
+        }
     },
     "Envars":{
         "plugin":"volatility3.framework.plugins.windows.envars.Envars"
@@ -48,7 +51,10 @@
         "plugin":"windows.dlllist.DllList"
     },
     "NetScan":{
-        "plugin":"windows.netscan.NetScan"
+        "plugin":"windows.netscan.NetScan",
+        "param":{
+            "include_corrupt":"plugins.NetScan.include-corrupt"
+        }
     },
     "NetStat":{
         "plugin":"volatility3.framework.plugins.windows.netstat.NetStat"
@@ -72,7 +78,10 @@
         "plugin":"volatility3.framework.plugins.windows.psscan.PsScan"
     },
     "PsTree":{
-        "plugin":"volatility3.framework.plugins.windows.pstree.PsTree"
+        "plugin":"volatility3.framework.plugins.windows.pstree.PsTree",
+        "param":{
+            "pid":"plugins.PsTree.pid"
+        }
     },
     "MBRScan":{
         "plugin":"volatility3.framework.plugins.windows.mbrscan.MBRScan"
