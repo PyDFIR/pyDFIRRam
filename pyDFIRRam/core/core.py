@@ -132,7 +132,6 @@ def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile
     args =None
     #Prendre en charge les kwargs pour les fonctions, mettre ensuite des definitions pour ces arguments
     # Pour ca il faut se referer a la docs pour savoir ce que nous pouvons prendre comme argument pour chaque fonction
-    print(allCommands[funcName]["param"].keys())
     if kwargs:
         try:
             allPossibleArgs = set(allCommands[funcName]["param"].keys())
@@ -142,14 +141,14 @@ def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile
                 value_kw = kwargs.get(value_key)
                 value = allCommands[funcName]["param"][value_key]
                 context = contexts.Context()
+                try:
+                    context.config[allCommands[funcName]["param"][value_key]] = value_kw
+                except:
+                    print("Error in set args in context, the necessary params are :",allPossibleArgs)
             else:
-                print("Les arguments demandee sont:",allCommands[funcName]["param"])
+                print("Les arguments demandee sont:",allPossibleArgs)
         except Exception as e:
             print("Aucune de parametres n'est pris en charge par cette fonctions. Les parametres sont les suivantes",allPossibleArgs)
-    try:
-        context.config[allCommands[funcName]["param"][value_key]] = value_kw
-    except:
-        print("error")
     exit(1)
     context = contexts.Context()
     args_added = ""
