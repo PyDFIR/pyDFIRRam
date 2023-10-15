@@ -136,22 +136,23 @@ def run_commands(funcName,filename,dumpPath,format,allCommands,progress,savefile
         try:
             allPossibleArgs = set(allCommands[funcName]["param"].keys())
             kw = set(kwargs.keys())
+            for e in kw:
+                print(e)
             if kw.issubset(allPossibleArgs):
                 value_key= list(kw)[0]
                 value_kw = kwargs.get(value_key)
-                value = allCommands[funcName]["param"][value_key]
                 context = contexts.Context()
                 try:
-                    context.config[allCommands[funcName]["param"][value_key]] = value_kw
+                    for e in kw:
+                        context.config[allCommands[funcName]["param"][e]] = value_kw
                 except:
                     print("Error in set args in context, the necessary params are :",allPossibleArgs)
             else:
                 print("Les arguments demandee sont:",allPossibleArgs)
         except Exception as e:
             print("Aucune de parametres n'est pris en charge par cette fonctions. Les parametres sont les suivantes",allPossibleArgs)
-    exit(1)
-    context = contexts.Context()
-    args_added = ""
+    else:
+        context = contexts.Context()
     # Ici a voir pour passer en parametre
     dump_filepath = dumpPath
     command = allCommands[funcName]["plugin"]

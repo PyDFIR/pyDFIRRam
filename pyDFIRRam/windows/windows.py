@@ -277,7 +277,7 @@ format = {self.format}
             for children in node['children']:
                 self.__rename_pstree(children)
     
-
+    # Va se faire degager d'ici maintenant que j'arrive mieux a gerer les arguments
     def DumpFiles(self, offset: list):
         data = []
         output_path = self.outpath
