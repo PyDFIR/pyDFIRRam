@@ -1,45 +1,73 @@
 {
     "PsList":{
-        "plugin":"windows.pslist.PsList"
-    },
-    "HiveList":{
-        "plugin":"windows.registry.hivelist.HiveList"
-    },
-    "Crashinfo":{
-        "plugin":"volatility3.framework.plugins.windows.crashinfo.Crashinfo",
+        "plugin":"windows.pslist.PsList",
         "param":{
-            "pid":"plugins.crashinfo.pid"
+            "physical":"windows.pslist.PsList.physical",
+            "pid":"plugins.pslist.PsList.pid"
         }
     },
+    "HiveList":{
+        "plugin":"windows.registry.hivelist.HiveList",
+        "param":{
+            "filter":"windows.registry.hivelist.HiveList.filter"
+        }
+    },
+    "Crashinfo":{
+        "plugin":"volatility3.framework.plugins.windows.crashinfo.Crashinfo"
+    },
     "Envars":{
-        "plugin":"volatility3.framework.plugins.windows.envars.Envars"
+        "plugin":"volatility3.framework.plugins.windows.envars.Envars",
+        "param":{
+            "pid":"plugins.windows.envars.Envars.pid",
+            "silent":"plugins.windows.envars.Envars.silent"
+        }
     },
     "VerInfo":{
-        "plugin":"windows.verinfo.VerInfo"
+        "plugin":"windows.verinfo.VerInfo",
+        "param":{
+            "extensive":"windows.verinfo.extensive"
+        }
     },
     "MutantScan":{
-        "plugin":"volatility3.framework.plugins.windows.mutantscan.MutantScan"
+        "plugin":"volatility3.framework.plugins.windows.mutantscan.MutantScan",
     },
     "BigPools":{
-        "plugin":"windows.bigpools.BigPools"
+        "plugin":"windows.bigpools.BigPools",
+        "param":{
+            "tags":"plugins.windows.mutantscan.MutantScan.tags",
+            "show_free":"plugins.windows.mutantscan.show-free"
+        }
     },
     "HiveScan":{
         "plugin":"windows.registry.hivescan.HiveScan"
     },
     "getSids":{
-        "plugin":"volatility3.framework.plugins.windows.getsids.GetSIDs"
+        "plugin":"volatility3.framework.plugins.windows.getsids.GetSIDs",
+        "param":{
+            "pid":"plugins.windows.getsids.pid"
+        }
     },
     "VADinfo":{
-        "plugin":"windows.vadinfo.VadInfo"
+        "plugin":"windows.vadinfo.VadInfo",
+        "param":{
+            "address":"windows.vadinfo.VadInfo.address",
+            "pid":"plugins.windows.vadinfo.pid"
+        }
     },
     "skeleton_key_check":{
         "plugin":"volatility3.framework.plugins.windows.skeleton_key_check.Skeleton_Key_Check"
     },
     "Sessions":{
-        "plugin":"volatility3.framework.plugins.windows.sessions.Sessions"
+        "plugin":"volatility3.framework.plugins.windows.sessions.Sessions",
+        "param":{
+            "pid":"plugins.windows.sessions.pid"
+        }
     },
     "Strings":{
-        "plugin":"volatility3.framework.plugins.windows.strings.Strings"
+        "plugin":"volatility3.framework.plugins.windows.strings.Strings",
+        "param":{
+            "pid":"plugins.windows.strings.pid"
+        }
     },
     "GetSetviceSids":{
         "plugin":"volatility3.framework.plugins.windows.getservicesids.GetServiceSIDs"
@@ -48,7 +76,10 @@
         "plugin":"volatility3.framework.plugins.windows.info.Info"
     },
     "DllList":{
-        "plugin":"windows.dlllist.DllList"
+        "plugin":"windows.dlllist.DllList",
+        "param":{
+            "pid":"plugins.windows.dlllist.pid"
+        }
     },
     "NetScan":{
         "plugin":"windows.netscan.NetScan",
@@ -57,7 +88,10 @@
         }
     },
     "NetStat":{
-        "plugin":"volatility3.framework.plugins.windows.netstat.NetStat"
+        "plugin":"volatility3.framework.plugins.windows.netstat.NetStat",
+        "param":{
+            "include_corrupt":"plugins.netstat.include-corrupt"
+        }
     },
     "PoolScanner":{
         "plugin":"volatility3.framework.plugins.windows.poolscanner.PoolScanner"
@@ -75,28 +109,47 @@
         "plugin":"volatility3.framework.plugins.windows.symlinkscan.SymlinkScan"
     },
     "PsScan":{
-        "plugin":"volatility3.framework.plugins.windows.psscan.PsScan"
+        "plugin":"volatility3.framework.plugins.windows.psscan.PsScan",
+        "param":{
+            "pid":"plugins.psscan.pid",
+            "physical":"plugins.psscan.physical"
+        }
     },
     "PsTree":{
         "plugin":"volatility3.framework.plugins.windows.pstree.PsTree",
         "param":{
-            "pid":"plugins.PsTree.pid"
+            "pid":"plugins.PsTree.pid",
+            "physical":"plugins.pstree.physical"
         }
     },
     "MBRScan":{
-        "plugin":"volatility3.framework.plugins.windows.mbrscan.MBRScan"
+        "plugin":"volatility3.framework.plugins.windows.mbrscan.MBRScan",
+        "param":{
+            "full":"plugins.windows.mbrscan.full"
+        }
     },
     "DumpFiles":{
-        "plugin":"volatility3.framework.plugins.windows.dumpfiles.DumpFiles"
+        "plugin":"volatility3.framework.plugins.windows.dumpfiles.DumpFiles",
+        "param":{
+            "pid":"plugins.dumpfiles.pid",
+            "virtaddr":"plugins.dumpfiles.virtaddr",
+            "physaddr":"plugins.dumpfiles.physaddr"
+        }
     },
     "VirtMap":{
         "plugin":"volatility3.framework.plugins.windows.virtmap.VirtMap"
     },
     "CmdLine":{
-        "plugin":"volatility3.framework.plugins.windows.cmdline.CmdLine"
+        "plugin":"volatility3.framework.plugins.windows.cmdline.CmdLine",
+        "param":{
+            "pid":"plugins.cmdline.pid"
+        }
     },
     "LdrModules":{
-        "plugin":"volatility3.framework.plugins.windows.ldrmodules.LdrModules"
+        "plugin":"volatility3.framework.plugins.windows.ldrmodules.LdrModules",
+        "param":{
+            "pid":"plugins.ldrmodules.pid"
+        }
     },
     "CacheDump":{
         "plugin":"volatility3.framework.plugins.windows.cachedump.Cachedump"
@@ -105,10 +158,17 @@
         "plugin":"volatility3.framework.plugins.windows.filescan.FileScan"
     },
     "Handles":{
-        "plugin":"volatility3.framework.plugins.windows.handles.Handles"
+        "plugin":"volatility3.framework.plugins.windows.handles.Handles",
+        "param":{
+            "pid":"plugins.handles.pid"
+        }
     },
     "VadInfo":{
-        "plugin":"volatility3.framework.plugins.windows.vadinfo.VadInfo"
+        "plugin":"volatility3.framework.plugins.windows.vadinfo.VadInfo",
+        "param":{
+            "pid":"plugins.vadinfo.pid",
+            "address":"windows.vadinfo.address"
+        }
     },
     "DriverScan":{
         "plugin":"windows.driverscan.DriverScan"
@@ -135,27 +195,47 @@
         "plugin":"volatility3.framework.plugins.windows.callbacks.Callbacks"
     },
     "Modules":{
-        "plugin":"volatility3.framework.plugins.windows.modules.Modules"
+        "plugin":"volatility3.framework.plugins.windows.modules.Modules",
+        "param":{
+            "name":"windows.modules.name"
+        }
     },
     "Malfind":{
-        "plugin":"volatility3.framework.plugins.windows.malfind.Malfind"
+        "plugin":"volatility3.framework.plugins.windows.malfind.Malfind",
+        "param":{
+            "pid":"plugins.malfind.pid"
+        }
     },
     "mftscan":{
         "plugin":"volatility3.framework.plugins.windows.mftscan"
     },
     "Memmap":{
-        "plugin":"volatility3.framework.plugins.windows.memmap.Memmap"
+        "plugin":"volatility3.framework.plugins.windows.memmap.Memmap",
+        "param":{
+            "pid":"plugins.memmap.pid"
+        }
     },
     "Privs":{
-        "plugin":"volatility3.framework.plugins.windows.privileges.Privs"
+        "plugin":"volatility3.framework.plugins.windows.privileges.Privs",
+        "param":{
+            "pid":"plugins.privileges.Privs.pid"
+        }
     },
     "UserAssist":{
-        "plugin":"volatility3.framework.plugins.windows.registry.userassist.UserAssist"
+        "plugin":"volatility3.framework.plugins.windows.registry.userassist.UserAssist",
+        "param":{
+            "offset":"plugins.userassist.userassist.offset"
+        }
     },
     "Hivescan":{
         "plugin":"volatility3.framework.plugins.windows.registry.hivescan.HiveScan"
     },
     "PrintKey":{
-        "plugin":"volatility3.framework.plugins.windows.registry.printkey.PrintKey"
+        "plugin":"volatility3.framework.plugins.windows.registry.printkey.PrintKey",
+        "param":{
+            "offset":"plugins.registry.PrintKey.offset",
+            "recurse":"plugins.registry.PrintKey.recurse",
+            "key":"plugins.registry.PrintKey.key"
+        }
     }
 }
