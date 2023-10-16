@@ -363,6 +363,6 @@ format = {self.format}
             timestamp = str(int(dateOnSys.timestamp()))
             # ci-dessous a modifier, pas propre
             self.filename = "/tmp/"+productSys+timestamp+"Info.json"
-            self.save_file(data,self.filename)
+            #self.save_file(data,self.filename)
             self.infofn = self.filename
             return data
