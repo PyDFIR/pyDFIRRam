@@ -127,10 +127,6 @@ def parameters_context():
     pass        
 def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefile,**kwargs):
     cache_filename = filename
-    args_added = ""
-    #Variable Args de debug
-    args =None
-    #Prendre en charge les kwargs pour les fonctions, mettre ensuite des definitions pour ces arguments
     # Pour ca il faut se referer a la docs pour savoir ce que nous pouvons prendre comme argument pour chaque fonction
     if kwargs:
         try:
