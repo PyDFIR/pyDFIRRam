@@ -123,11 +123,16 @@ def runner(dump_filepath,base_config_path,kb,all_commands,progress,context,args=
                 print("error in run\n Expception:",exceptionHandler)
                 pass
 
-def parameters_context():
-    pass        
+def parameters_context(key,**kwargs):
+    print(key,set(kwargs.keys()))
 def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefile,**kwargs):
     cache_filename = filename
+    args_added = ""
+    #Variable Args de debug
+    args =None
+    #Prendre en charge les kwargs pour les fonctions, mettre ensuite des definitions pour ces arguments
     # Pour ca il faut se referer a la docs pour savoir ce que nous pouvons prendre comme argument pour chaque fonction
+    
     if kwargs:
         try:
             all_possible_args = set(all_commands[func_name]["param"].keys())

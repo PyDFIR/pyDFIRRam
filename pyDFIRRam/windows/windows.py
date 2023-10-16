@@ -1,11 +1,12 @@
 from datetime import datetime
 import pathlib,json
+from typing import Any
 
 import volatility3.plugins
 import volatility3.symbols
 
 #PyDFIRModules
-from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph
+from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph, parameters_context
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 
@@ -125,7 +126,7 @@ class windows(pyDFIRRam):
             self.infofn = ""
         except Exception as e:
             print(e)
-    def __in_cache(self, funcName):
+    def __in_cache(self, funcName,**kwargs):
         """
         Check if there is cached content for a specific function.
     
@@ -137,6 +138,14 @@ class windows(pyDFIRRam):
         :return: The cached content in the specified output format.
         :rtype: Depends on the format specified.
         """
+        if kwargs:
+            try:
+                kwargs_key = set(kwargs.keys())
+                kwargs_value = set (kwargs.values())
+                print(kwargs_key,kwargs_value)
+
+            except Exception as e:
+                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {all_possible_args}")
         parquet_filename = self.__cache_filename(funcName)
         with open(parquet_filename) as f:
             data = json.load(f)
@@ -185,7 +194,7 @@ class windows(pyDFIRRam):
         with open(filename,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
-    def __getattr__(self, key,**kwargs):
+    def __getattr__(self, key):
         """
         Handle attribute access for commands.
 
@@ -198,13 +207,22 @@ class windows(pyDFIRRam):
         :param kwargs: Keyword arguments for the method call.
         :return: A lambda function that executes the __run_commands method for the given key.
         """
-        if key in self.cmds:
-            filename = self.__cache_filename(key)
+
+        if key not in self.cmds:
+            raise ValueError("Unable to handle {key}")
+        
+        def parse_data_function(**kwargs):
+            filename = key
+            for k,v in kwargs.items():
+                filename += str(k)
+                filename += str(v)
+            filename = self.__cache_filename(filename)
             if os.path.isfile(filename):
-                return lambda : self.__in_cache(key)
-            else :
-                return lambda **kwargs: run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
-            
+                return self.__in_cache(key)
+            return run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
+        
+        return parse_data_function
+
     def __print_config(self):
         """
         Print the current configuration settings.

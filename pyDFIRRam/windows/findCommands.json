@@ -29,7 +29,7 @@
         }
     },
     "MutantScan":{
-        "plugin":"volatility3.framework.plugins.windows.mutantscan.MutantScan",
+        "plugin":"volatility3.framework.plugins.windows.mutantscan.MutantScan"
     },
     "BigPools":{
         "plugin":"windows.bigpools.BigPools",
@@ -219,6 +219,9 @@
         "plugin":"volatility3.framework.plugins.windows.privileges.Privs",
         "param":{
             "pid":"plugins.privileges.Privs.pid"
+        },
+        "type":{
+            "pid":"int"
         }
     },
     "UserAssist":{
