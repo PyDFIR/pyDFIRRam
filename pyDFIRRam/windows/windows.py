@@ -382,8 +382,7 @@ format = {self.format}
             except:
                 dateOnSys = data["NtMajorVersion"]
             timestamp = str(int(dateOnSys.timestamp()))
-            # ci-dessous a modifier, pas propre
-            self.filename = "/tmp/"+productSys+timestamp+"Info.json"
-            #self.save_file(data,self.filename)
+            self.filename = self.temp + productSys + timestamp+funcName+"."+self.formatSave
+            self.save_file(data,self.filename)
             self.infofn = self.filename
             return data
