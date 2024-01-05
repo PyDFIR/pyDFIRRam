@@ -9,7 +9,7 @@ import volatility3.symbols
 from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph, parameters_context
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
-
+from pyDFIRRam import get_hash
 
 from pyDFIRRam import pyDFIRRam
 from volatility3.cli import (
@@ -23,6 +23,7 @@ from volatility3.framework import (
 )
 
 class windows(pyDFIRRam):
+
     def __init__(self, InvestFile, savefile:bool = False,Outputformat:str ="json",
                                 funcName:str ="defaultname", showConfig=False, outpath:str = os.getcwd(), progress:bool=False) -> None:
         """
@@ -99,7 +100,7 @@ class windows(pyDFIRRam):
                 "Hivescan",
                 "PrintKey"
             ]
-            self.fileHash = pyDFIRRam.get_hash(InvestFile)
+            self.fileHash = get_hash(InvestFile)
             Outformat = Outputformat.lower()
             self.choice = [
                 "json",
@@ -213,7 +214,7 @@ class windows(pyDFIRRam):
             funcName = self.__cache_funcName(funcName)
             if os.path.isfile(funcName):
                 return self.__in_cache(key)
-            return run_commands(key,self.fileHash+funcName,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
+            return run_commands(key,funcName,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
         
         return parse_data_function
 

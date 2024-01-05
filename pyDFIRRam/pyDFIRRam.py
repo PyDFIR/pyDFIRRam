@@ -158,7 +158,7 @@ class pyDFIRRam:
         strings_proc = subprocess.Popen('strings {}'.format(file).split(), shell=False, stdout=subprocess.PIPE)
         return strings_proc.communicate()[0].decode()
     
-    def get_hash(self,file_path):
+def get_hash(file_path):
         """
         Calcule le hachage SHA-256 d'un fichier.
 

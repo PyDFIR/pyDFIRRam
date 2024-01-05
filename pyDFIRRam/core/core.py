@@ -16,7 +16,6 @@ from volatility3.framework import (
 )
 from pyDFIRRam.utils.renderer.renderer import *
 from pyDFIRRam.utils.handler.handler import *
-
 def save_file(out_dataframe,filename:str,savefile,cache_filename):
     if savefile:
         with open(filename+".json", 'w',encoding="UTF-8") as fichier:
@@ -173,6 +172,7 @@ def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefi
         for artifact in retkb:
             artifact = {x.translate({32: None}): y for x, y in artifact.items()}
     retkb = retkb[func_name]['result']
+    print(cache_filename)
     save_file(retkb,cache_filename+args_added,savefile,cache_filename)
     if func_name == "PsTree":
         format = "json"
