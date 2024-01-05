@@ -75,9 +75,10 @@ def build_context(investigation_file_path:str, plugin, context, base_config_path
         constructed = plugins.construct_plugin(context,automagics,plugin,base_config_path,progress,Handler.create_file_handler(investigation_file_path))
         if progress == PrintedProgress():
             print("")
+        return constructed
     except Exception as e:
         print(e)
-    return constructed
+
 def getPlugins() -> volatility3.framework:
     """
     Get the list of available plugins.
@@ -100,6 +101,7 @@ def parse_output(commands_to_execute):
     :return: The updated dictionary with command results.
     :rtype: dict
     """
+    print(commands_to_execute)
     for runnable, command_entry in commands_to_execute.items():
         if command_entry['constructed']:
             try:

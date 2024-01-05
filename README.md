@@ -4,6 +4,7 @@
 3. Se concentrer sur la data plutot que sur la commandes
 4. Utiliser comme un dataset
 5. Pouvoir gerer plusieurs dump dans un meme programme
+
 # Utilisation
 ## Installation
 python3 -m venv pydfirVenv
@@ -32,6 +33,9 @@ winObj1 = windows(os.getcwd()+"memdump.mem") -> Les parametres ici sont tres imp
 
 data1 = winObj1.PsList()
 data2 = winObj2.PsTree()
+
+data1
+data2
 ....
 ```
 

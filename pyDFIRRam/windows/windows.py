@@ -175,8 +175,9 @@ class windows(pyDFIRRam):
         p = self.Info()
         self.progress = PrintedProgress()
         productSys = p["NtProductType"]
-        dateOnSys = datetime.strptime(p["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
-        timestamp = str(int(dateOnSys.timestamp())) 
+        #dateOnSys = datetime.strptime(p["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
+        #timestamp = str(int(dateOnSys.timestamp())) 
+        timestamp = ""
         filename = "/tmp/"+productSys+timestamp+func+".json"
         return filename
     
@@ -378,11 +379,12 @@ format = {self.format}
                 index += 1 
             productSys = data["NtProductType"]
             try :
-                dateOnSys = datetime.strptime(data["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
+                #dateOnSys = datetime.strptime(data["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
+                timestamp = str(int(dateOnSys.timestamp()))
             except:
                 dateOnSys = data["NtMajorVersion"]
-            timestamp = str(int(dateOnSys.timestamp()))
-            self.filename = self.temp + productSys + timestamp+funcName+"."+self.formatSave
+            
+            self.filename = self.temp + productSys + funcName+"."+self.formatSave
             self.save_file(data,self.filename)
             self.infofn = self.filename
             return data
