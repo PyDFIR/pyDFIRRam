@@ -1,5 +1,5 @@
 from datetime import datetime
-import pathlib,json
+import pathlib,json,os
 from typing import Any
 
 import volatility3.plugins
@@ -99,14 +99,13 @@ class windows(pyDFIRRam):
                 "Hivescan",
                 "PrintKey"
             ]
-            self.filename = filename
+            self.fileHash = pyDFIRRam.get_hash(InvestFile)
             Outformat = Outputformat.lower()
             self.choice = [
                 "json",
                 "dataframe"
                 ]
             self.savefile = savefile
-            self.filename = filename
             self.dumpPath = InvestFile
             self.formatSave = "json"
             self.outpath = outpath +"/"
@@ -145,9 +144,9 @@ class windows(pyDFIRRam):
                 print(kwargs_key,kwargs_value)
 
             except Exception as e:
-                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {all_possible_args}")
-        parquet_filename = self.__cache_filename(funcName)
-        with open(parquet_filename) as f:
+                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {self.choice}")
+        target_filename = self.__cache_filename(funcName)
+        with open(target_filename) as f:
             data = json.load(f)
         format_file = self.format
         if funcName == "PsTree":
@@ -156,7 +155,7 @@ class windows(pyDFIRRam):
         else: 
             return render_outputFormat(format_file, data)
 
-        """table = pq.read_table(parquet_filename)
+        """table = pq.read_table(target_filename)
         content = table.to_pandas()
         return self.render_outputFormat(content)"""
     def __cache_filename(self,func):
@@ -171,14 +170,7 @@ class windows(pyDFIRRam):
         :return: The generated cache filename.
         :rtype: str
         """
-        self.progress = MuteProgress()
-        p = self.Info()
-        self.progress = PrintedProgress()
-        productSys = p["NtProductType"]
-        #dateOnSys = datetime.strptime(p["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
-        #timestamp = str(int(dateOnSys.timestamp())) 
-        timestamp = ""
-        filename = "/tmp/"+productSys+timestamp+func+".json"
+        filename = self.temp+self.fileHash+func+".json"
         return filename
     
     def __getFileContent(self,filename) -> dict:
@@ -251,7 +243,7 @@ format = {self.format}
         """
         varTempOS = os.name
         if varTempOS == 'nt':
-            return "ici mettre le path du temp sous windows","windows"
+            return " C:/WINDOWS/Temp","windows"
         elif varTempOS == 'darwin':
             return "/tmp/","mac"
         elif varTempOS == 'posix':
@@ -263,8 +255,8 @@ format = {self.format}
     
     def save_file(self,out_dataframe,filename:str):
         if self.savefile:
-            print(self.filename)
-            with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
+            print(self.fileHash)
+            with open(self.fileHash+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe, fichier)
         else:
             with open(filename, 'w',encoding="UTF-8") as fichier:
@@ -378,13 +370,7 @@ format = {self.format}
                 data[k] = retkb[index]["Value"]
                 index += 1 
             productSys = data["NtProductType"]
-            try :
-                #dateOnSys = datetime.strptime(data["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
-                timestamp = str(int(dateOnSys.timestamp()))
-            except:
-                dateOnSys = data["NtMajorVersion"]
-            
-            self.filename = self.temp + productSys + funcName+"."+self.formatSave
-            self.save_file(data,self.filename)
-            self.infofn = self.filename
+            self.fileHash = self.fileHash + funcName+"."+self.formatSave
+            self.save_file(data,self.fileHash)
+            self.infofn = self.fileHash
             return data
