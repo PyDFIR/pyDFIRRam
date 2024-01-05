@@ -25,20 +25,23 @@ def save_file(out_dataframe,filename:str,savefile,cache_filename):
         with open(filename, 'w',encoding="UTF-8") as fichier:
             json.dump(out_dataframe,fichier)
 
-def in_cache( func_name,cache_filename):
+def in_cache(func_name, cache_filename):
     """
     Check if there is cached content for a specific function.
     This method reads the cached content from a file and returns the content
     in the appropriate output format.
     :param func_name: The name of the function to check for cached content.
     :type func_name: str
+    :param cache_filename: The filename for caching.
+    :type cache_filename: str
     :return: The cached content in the specified output format.
     :rtype: Depends on the format specified.
     """
-    parquet_filename = cache_filename(func_name) + ".parquet"
-    table = pq.read_table(parquet_filename)
-    content = table.to_pandas()
-    return render_outputFormat(content)
+    target_filename = cache_filename + func_name + ".json" 
+    with open(target_filename, 'r') as file:
+        content = pandas.read_json(file)
+    return render_output_format(content) 
+
 
 def build_context(investigation_file_path:str, plugin, context, base_config_path,all_commands,progress,args=None):
     """
@@ -110,6 +113,7 @@ def parse_output(commands_to_execute):
             except Exception as e:
                 print(f"Error in run: {e}")
     return commands_to_execute
+
 def runner(dump_filepath,base_config_path,kb,all_commands,progress,context,args=None):
     for runable in kb:
         if args is not None:
@@ -127,14 +131,11 @@ def runner(dump_filepath,base_config_path,kb,all_commands,progress,context,args=
 
 def parameters_context(key,**kwargs):
     print(key,set(kwargs.keys()))
+
 def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefile,**kwargs):
     cache_filename = filename
     args_added = ""
-    #Variable Args de debug
-    args =None
-    #Prendre en charge les kwargs pour les fonctions, mettre ensuite des definitions pour ces arguments
-    # Pour ca il faut se referer a la docs pour savoir ce que nous pouvons prendre comme argument pour chaque fonction
-    
+    args =None    
     if kwargs:
         try:
             all_possible_args = set(all_commands[func_name]["param"].keys())
@@ -167,15 +168,15 @@ def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefi
         kb = runner(dump_filepath,"plugins",command,all_commands,progress,context)
         retkb = parse_output(kb)
     else:
-        kb =runner(dump_filepath,"plugins",command,args=args)
+        kb = runner(dump_filepath,"plugins",command,args=args)
         retkb = parse_output(kb)
         for artifact in retkb:
             artifact = {x.translate({32: None}): y for x, y in artifact.items()}
     retkb = retkb[func_name]['result']
-    #save_file(retkb,cache_filename+args_added,savefile,cache_filename)
+    save_file(retkb,cache_filename+args_added,savefile,cache_filename)
     if func_name == "PsTree":
         format = "json"
-        return json_to_graph(retkb)
+        return retkb
     else:
         return render_outputFormat(format,retkb)
     

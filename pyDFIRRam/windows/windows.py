@@ -24,7 +24,7 @@ from volatility3.framework import (
 
 class windows(pyDFIRRam):
     def __init__(self, InvestFile, savefile:bool = False,Outputformat:str ="json",
-                                filename:str ="defaultname", showConfig=False, outpath:str = os.getcwd(), progress:bool=False) -> None:
+                                funcName:str ="defaultname", showConfig=False, outpath:str = os.getcwd(), progress:bool=False) -> None:
         """
         Initialize an instance of Windows.
 
@@ -34,8 +34,8 @@ class windows(pyDFIRRam):
         :type savefile: bool
         :param Outputformat: Output format for saving data (json, dataframe), defaults to "json".
         :type Outputformat: str
-        :param filename: Name of the output file, defaults to "defaultname".
-        :type filename: str
+        :param funcName: Name of the output file, defaults to "defaultname".
+        :type funcName: str
         :param showConfig: Flag to display configuration details, defaults to False.
         :type showConfig: bool
         :param outpath: Path to the output directory, defaults to the current working directory.
@@ -145,8 +145,8 @@ class windows(pyDFIRRam):
 
             except Exception as e:
                 print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {self.choice}")
-        target_filename = self.__cache_filename(funcName)
-        with open(target_filename) as f:
+        target_funcName = self.__cache_funcName(funcName)
+        with open(target_funcName) as f:
             data = json.load(f)
         format_file = self.format
         if funcName == "PsTree":
@@ -155,36 +155,36 @@ class windows(pyDFIRRam):
         else: 
             return render_outputFormat(format_file, data)
 
-        """table = pq.read_table(target_filename)
+        """table = pq.read_table(target_funcName)
         content = table.to_pandas()
         return self.render_outputFormat(content)"""
-    def __cache_filename(self,func):
+    def __cache_funcName(self,func):
         """
-        Generate a cache filename based on function name and system information.
+        Generate a cache funcName based on function name and system information.
 
-        This method generates a cache filename using the function name, system information,
-        and a timestamp. The filename is used for storing cached content.
+        This method generates a cache funcName using the function name, system information,
+        and a timestamp. The funcName is used for storing cached content.
 
         :param func: The name of the function.
         :type func: str
-        :return: The generated cache filename.
+        :return: The generated cache funcName.
         :rtype: str
         """
-        filename = self.temp+self.fileHash+func+".json"
-        return filename
+        funcName = self.temp+self.fileHash+func+".json"
+        return funcName
     
-    def __getFileContent(self,filename) -> dict:
+    def __getFileContent(self,funcName) -> dict:
         """
         Get the content of a JSON file and return it as a dictionary.
 
         This method reads the content of a JSON file and parses it into a dictionary.
 
-        :param filename: Path to the JSON file.
-        :type filename: str
+        :param funcName: Path to the JSON file.
+        :type funcName: str
         :return: A dictionary containing the parsed JSON data.
         :rtype: dict
         """
-        with open(filename,'r',encoding="UTF-8") as fichier:
+        with open(funcName,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
     def __getattr__(self, key):
@@ -205,14 +205,15 @@ class windows(pyDFIRRam):
             raise ValueError("Unable to handle {key}")
         
         def parse_data_function(**kwargs):
-            filename = key
+            funcName = key
             for k,v in kwargs.items():
-                filename += str(k)
-                filename += str(v)
-            filename = self.__cache_filename(filename)
-            if os.path.isfile(filename):
+                funcName += str(k)
+                funcName += str(v)
+
+            funcName = self.__cache_funcName(funcName)
+            if os.path.isfile(funcName):
                 return self.__in_cache(key)
-            return run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
+            return run_commands(key,self.fileHash+funcName,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
         
         return parse_data_function
 
@@ -253,13 +254,13 @@ format = {self.format}
     
     
     
-    def save_file(self,out_dataframe,filename:str):
+    def save_file(self,out_dataframe,funcName:str):
         if self.savefile:
             print(self.fileHash)
             with open(self.fileHash+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe, fichier)
         else:
-            with open(filename, 'w',encoding="UTF-8") as fichier:
+            with open(funcName, 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe,fichier)
     
 
@@ -269,7 +270,7 @@ format = {self.format}
         Rename the nodes in the Tree provided.
 
         This method recursively renames the nodes in the provided tree by renaming 
-        the 'ImageFileName' key to 'name' and '__children' key to 'children'.
+        the 'ImagefuncName' key to 'name' and '__children' key to 'children'.
 
         :param node: The node in the tree to be renamed.
         :type node: dict
@@ -277,14 +278,14 @@ format = {self.format}
         """
         if len(node['__children']) == 0:
             node['children'] = node['__children']
-            node['name'] = node['ImageFileName']
+            node['name'] = node['ImagefuncName']
             del (node['__children'])
-            del (node['ImageFileName'])
+            del (node['ImagefuncName'])
         else:
             node['children'] = node['__children']
-            node['name'] = node['ImageFileName']
+            node['name'] = node['ImagefuncName']
             del (node['__children'])
-            del (node['ImageFileName'])
+            del (node['ImagefuncName'])
             for children in node['children']:
                 self.__rename_pstree(children)
     
