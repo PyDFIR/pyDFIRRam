@@ -126,14 +126,12 @@ def runner(dump_filepath,base_config_path,kb,all_commands,progress,context,args=
                 return kb
             except Exception as exceptionHandler:
                 print("error in run\n Expception:",exceptionHandler)
-                pass
 
 def parameters_context(key,**kwargs):
     print(key,set(kwargs.keys()))
 
 def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefile,**kwargs):
     cache_filename = filename
-    args_added = ""
     args =None    
     if kwargs:
         try:
@@ -154,15 +152,10 @@ def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefi
             print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {all_possible_args}")
     else:
         context = contexts.Context()
-    # Ici a voir pour passer en parametre
     dump_filepath = dumpPath
     command = all_commands[func_name]["plugin"]
     plugin_list = getPlugins()
-    command = {
-        func_name:{
-            'plugin':plugin_list[command]
-            }
-        }
+    command = { func_name:{'plugin':plugin_list[command]}}
     if not args :
         kb = runner(dump_filepath,"plugins",command,all_commands,progress,context)
         retkb = parse_output(kb)
@@ -172,8 +165,8 @@ def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefi
         for artifact in retkb:
             artifact = {x.translate({32: None}): y for x, y in artifact.items()}
     retkb = retkb[func_name]['result']
-    print(cache_filename)
-    save_file(retkb,cache_filename+args_added,savefile,cache_filename)
+    save_file(retkb,cache_filename,savefile,cache_filename)
+    # TODO : Ici ca degage
     if func_name == "PsTree":
         format = "json"
         return retkb
