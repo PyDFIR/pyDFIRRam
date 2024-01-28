@@ -6,7 +6,7 @@ import volatility3.plugins
 import volatility3.symbols
 
 #PyDFIRModules
-from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph, parameters_context
+from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph, parameters_context, build_basic_context
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 
@@ -145,7 +145,7 @@ class windows(pyDFIRRam):
                 print(kwargs_key,kwargs_value)
 
             except Exception as e:
-                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {all_possible_args}")
+                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {self.all_possible_args}")
         parquet_filename = self.__cache_filename(funcName)
         with open(parquet_filename) as f:
             data = json.load(f)
@@ -195,6 +195,7 @@ class windows(pyDFIRRam):
         with open(filename,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
+    
     def __getattr__(self, key):
         """
         Handle attribute access for commands.
@@ -217,6 +218,7 @@ class windows(pyDFIRRam):
             for k,v in kwargs.items():
                 filename += str(k)
                 filename += str(v)
+                print(f"Function:{k} value to search = {v}")
             filename = self.__cache_filename(filename)
             if os.path.isfile(filename):
                 return self.__in_cache(key)
@@ -367,10 +369,13 @@ format = {self.format}
                     'plugin':plugin_list[command]
                     }
                 }
-            context = contexts.Context()
-            kb = runner(dump_filepath,"plugins",command,self.allCommands,self.progress,context)
-            retkb = parse_output(kb)
-            retkb = retkb['Info']['result']
+            self.progress = PrintedProgress()
+            context = build_basic_context(dump_filepath,command["Info"]["plugin"],self.progress)
+            print(context)
+
+            info = runner(context)
+            retkb = parse_output(info)
+            print(json.dumps(retkb,indent=2))
             header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
             index = 0
             data = {}
