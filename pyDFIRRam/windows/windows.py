@@ -1,9 +1,6 @@
 from datetime import datetime
-import pathlib,json,os
 from typing import Any
 
-import volatility3.plugins
-import volatility3.symbols
 
 #PyDFIRModules
 from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph, parameters_context
@@ -22,33 +19,30 @@ from volatility3.framework import (
     plugins,
 )
 
+import pathlib,json,os
+import volatility3.plugins
+import volatility3.symbols
+
+
+
 class windows(pyDFIRRam):
 
-    def __init__(self, InvestFile, savefile:bool = False,Outputformat:str ="json",
-                                funcName:str ="defaultname", showConfig=False, outpath:str = os.getcwd(), progress:bool=False) -> None:
-        """
-        Initialize an instance of Windows.
-
-        :param InvestFile: Path to the investment file.
-        :type InvestFile: str
-        :param savefile: Flag to indicate whether to save the output to a file, defaults to False.
-        :type savefile: bool
-        :param Outputformat: Output format for saving data (json, dataframe), defaults to "json".
-        :type Outputformat: str
-        :param funcName: Name of the output file, defaults to "defaultname".
-        :type funcName: str
-        :param showConfig: Flag to display configuration details, defaults to False.
-        :type showConfig: bool
-        :param outpath: Path to the output directory, defaults to the current working directory.
-        :type outpath: str
-        :param progress: Flag to show progress, defaults to False.
-        :type progress: bool
-        :raises Exception: If there is an error during initialization.
-        """
-
+    def __init__(self, InvestFile, savefile: bool = False, Outputformat: str = "json",
+                 funcName: str = "defaultname", showConfig=False, outpath=os.getcwd(), progress: bool = False) -> None:
         try:
-            os.path.isfile(InvestFile)
-            self.cmds = [
+            self.__validate_file(InvestFile)
+            self.__initialize_attributes(InvestFile, savefile, Outputformat, funcName, showConfig, outpath, progress)
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred during initialization: {e}")
+
+    def __validate_file(self, InvestFile):
+        if not os.path.isfile(InvestFile):
+            raise FileNotFoundError(f"The file {InvestFile} does not exist.")
+
+    def __initialize_attributes(self, InvestFile, savefile, Outputformat, funcName, showConfig, outpath, progress):
+        self.cmds = [
                 "PsList",
                 "HiveList",
                 "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
@@ -100,32 +94,33 @@ class windows(pyDFIRRam):
                 "Hivescan",
                 "PrintKey"
             ]
-            self.fileHash = get_hash(InvestFile)
-            Outformat = Outputformat.lower()
-            self.choice = [
-                "json",
-                "dataframe"
-                ]
-            self.savefile = savefile
-            self.dumpPath = InvestFile
-            self.formatSave = "json"
-            self.outpath = outpath +"/"
-            self.showconf = showConfig
-            if Outformat in self.choice:
-                self.format = Outformat
-            else:
-                print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
-            if showConfig:
-                self.__print_config()
-            self.allCommands = self.__getFileContent(str(pathlib.Path(__file__).parent) + '/findCommands.json')
-            self.temp, self.plateform = self.__definePlatforms()
-            if progress:
-                self.progress = PrintedProgress()
-            else:
-                self.progress = MuteProgress()
-            self.infofn = ""
-        except Exception as e:
-            print(e)
+        self.fileHash = get_hash(InvestFile)
+        Outformat = Outputformat.lower()
+        self.choice = ["json", "dataframe"]
+        self.savefile = savefile
+        self.dumpPath = InvestFile
+        self.formatSave = "json" if Outformat in self.choice else None
+        self.outpath = os.path.join(outpath, "")  # Ensure proper directory path
+        self.showconf = showConfig
+        if Outformat not in self.choice:
+            print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
+        else:
+            self.format = Outformat
+        if showConfig:
+            self.__print_config()
+        self.allCommands = self.get_file_content(str(pathlib.Path(__file__).parent) + '/findCommands.json')
+        self.temp, self.plateform = self.__define_platforms()
+
+        if progress:
+            self.progress = PrintedProgress()
+        else:
+            self.progress = MuteProgress()
+
+        self.infofn = ""
+
+    def showFunctions(self) -> list:
+        return self.cmds
+
     def __in_cache(self, funcName,**kwargs):
         """
         Check if there is cached content for a specific function.
@@ -174,7 +169,7 @@ class windows(pyDFIRRam):
         funcName = self.temp+self.fileHash+func+".json"
         return funcName
     
-    def __getFileContent(self,funcName) -> dict:
+    def get_file_content(self,funcName) -> dict:
         """
         Get the content of a JSON file and return it as a dictionary.
 
@@ -201,7 +196,7 @@ class windows(pyDFIRRam):
         :param kwargs: Keyword arguments for the method call.
         :return: A lambda function that executes the __run_commands method for the given key.
         """
-
+        print(key)
         if key not in self.cmds:
             raise ValueError("Unable to handle {key}")
         
@@ -232,7 +227,7 @@ Save file = {self.savefile}
 format = {self.format}                                   
 ##########################################################""")
     
-    def __definePlatforms(self)-> tuple:
+    def __define_platforms(self)-> tuple:
         """
         Define platform-specific settings.
 

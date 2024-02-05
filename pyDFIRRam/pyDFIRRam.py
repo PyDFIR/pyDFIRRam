@@ -80,7 +80,7 @@ class pyDFIRRam:
             if chunk == b"\x00\x00\x00\x00\x00\x00\x00\x00":
                 print("File Type is unknown and considered as raw")
                 return "raw"
-            
+    ## TODO : Check si c'est pour linux        
     def __grab_logs(self,raw_strings,savelogs=False,namefile="") -> pandas.DataFrame:
         """Grabs DTG|...|LOG_DESC logs, dumps to DF"""
         print('Generating DTG|SEQ_NUM|LOG_TYPE|LOG_LEVEL|LOG_DESC logs.')
