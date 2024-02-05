@@ -3,7 +3,7 @@
         "plugin":"windows.pslist.PsList",
         "param":{
             "physical":"windows.pslist.PsList.physical",
-            "pid":"plugins.pslist.PsList.pid"
+            "pid":"plugins.PsList.pid"
         }
     },
     "HiveList":{

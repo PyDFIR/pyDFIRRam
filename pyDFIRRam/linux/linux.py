@@ -5,7 +5,7 @@ import volatility3.plugins
 import volatility3.symbols
 
 #PyDFIRModules
-from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph
+from pyDFIRRam.core.core import run_commands,getPlugins,runner,json_to_graph
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 

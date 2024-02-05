@@ -66,8 +66,7 @@ def parse_output(context):
         :return: The updated dictionary with command results.
         :rtype: dict
         """
-        result = JsonRenderer().render(context)
-        return result
+        return JsonRenderer().render(context)
 
 # Faut faire une classe ici
 def render_outputFormat(format,jsondata:dict):
