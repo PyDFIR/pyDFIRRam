@@ -1,15 +1,12 @@
 from datetime import datetime
-import pathlib,json
 from typing import Any
 
-import volatility3.plugins
-import volatility3.symbols
 
 #PyDFIRModules
 from pyDFIRRam.core.core import run_commands,getPlugins,runner,json_to_graph, parameters_context, build_basic_context
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
-
+from pyDFIRRam import get_hash
 
 from pyDFIRRam import pyDFIRRam
 from volatility3.cli import (
@@ -22,33 +19,31 @@ from volatility3.framework import (
     plugins,
 )
 
+import pathlib,json,os
+import volatility3.plugins
+import volatility3.symbols
+
+
+
 class windows(pyDFIRRam):
-    def __init__(self, InvestFile, savefile:bool = False,Outputformat:str ="json",
-                                filename:str ="defaultname", showConfig=False, outpath:str = os.getcwd(), progress:bool=False) -> None:
-        """
-        Initialize an instance of Windows.
 
-        :param InvestFile: Path to the investment file.
-        :type InvestFile: str
-        :param savefile: Flag to indicate whether to save the output to a file, defaults to False.
-        :type savefile: bool
-        :param Outputformat: Output format for saving data (json, dataframe), defaults to "json".
-        :type Outputformat: str
-        :param filename: Name of the output file, defaults to "defaultname".
-        :type filename: str
-        :param showConfig: Flag to display configuration details, defaults to False.
-        :type showConfig: bool
-        :param outpath: Path to the output directory, defaults to the current working directory.
-        :type outpath: str
-        :param progress: Flag to show progress, defaults to False.
-        :type progress: bool
-        :raises Exception: If there is an error during initialization.
-        """
-
+    def __init__(self, InvestFile, savefile: bool = False, Outputformat: str = "json",
+                 funcName: str = "defaultname", showConfig=False, outpath=os.getcwd(), progress: bool = False) -> None:
         try:
-            os.path.isfile(InvestFile)
-            self.cmds = [
-                "PsList", # {pid type:list}
+            self.__validate_file(InvestFile)
+            self.__initialize_attributes(InvestFile, savefile, Outputformat, funcName, showConfig, outpath, progress)
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred during initialization: {e}")
+
+    def __validate_file(self, InvestFile):
+        if not os.path.isfile(InvestFile):
+            raise FileNotFoundError(f"The file {InvestFile} does not exist.")
+
+    def __initialize_attributes(self, InvestFile, savefile, Outputformat, funcName, showConfig, outpath, progress):
+        self.cmds = [
+                "PsList",
                 "HiveList",
                 "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
                 "Envars",
@@ -99,35 +94,33 @@ class windows(pyDFIRRam):
                 "Hivescan",
                 "PrintKey"
             ]
-            self.filename = filename
-            Outformat = Outputformat.lower()
-            self.choice = [
-                "json",
-                "dataframe"
-                ]
-            self.savefile = savefile
-            self.filename = filename
-            self.dumpPath = InvestFile
-            self.formatSave = "json"
-            self.outpath = outpath +"/"
-            self.showconf = showConfig
-            if Outformat in self.choice:
-                self.format = Outformat
-            else:
-                print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
-            if showConfig:
-                self.__print_config()
-            self.allCommands = self.__getFileContent(str(pathlib.Path(__file__).parent) + '/findCommands.json')
-            self.temp, self.plateform = self.__definePlatforms()
-            if progress:
-                self.progress = PrintedProgress()
-            else:
-                self.progress = MuteProgress()
-            self.infofn = ""
-        except Exception as e:
-            print(e)
+        self.fileHash = get_hash(InvestFile)
+        Outformat = Outputformat.lower()
+        self.choice = ["json", "dataframe"]
+        self.savefile = savefile
+        self.dumpPath = InvestFile
+        self.formatSave = "json" if Outformat in self.choice else None
+        self.outpath = os.path.join(outpath, "")  # Ensure proper directory path
+        self.showconf = showConfig
+        if Outformat not in self.choice:
+            print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
+        else:
+            self.format = Outformat
+        if showConfig:
+            self.__print_config()
+        self.allCommands = self.get_file_content(str(pathlib.Path(__file__).parent) + '/findCommands.json')
+        self.temp, self.plateform = self.__define_platforms()
 
-            
+        if progress:
+            self.progress = PrintedProgress()
+        else:
+            self.progress = MuteProgress()
+
+        self.infofn = ""
+
+    def showFunctions(self) -> list:
+        return self.cmds
+
     def __in_cache(self, funcName,**kwargs):
         """
         Check if there is cached content for a specific function.
@@ -147,9 +140,9 @@ class windows(pyDFIRRam):
                 kwargs_value = set (kwargs.values())
                 print(kwargs_key,kwargs_value)
             except Exception as e:
-                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {self.all_possible_args}")
-        parquet_filename = self.__cache_filename(funcName)
-        with open(parquet_filename) as f:
+                print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {self.choice}")
+        target_funcName = self.__cache_funcName(funcName)
+        with open(target_funcName) as f:
             data = json.load(f)
         format_file = self.format
         if funcName == "PsTree":
@@ -161,38 +154,31 @@ class windows(pyDFIRRam):
 
     def __cache_filename(self,func):
         """
-        Generate a cache filename based on function name and system information.
+        Generate a cache funcName based on function name and system information.
 
-        This method generates a cache filename using the function name, system information,
-        and a timestamp. The filename is used for storing cached content.
+        This method generates a cache funcName using the function name, system information,
+        and a timestamp. The funcName is used for storing cached content.
 
         :param func: The name of the function.
         :type func: str
-        :return: The generated cache filename.
+        :return: The generated cache funcName.
         :rtype: str
         """
-        self.progress = MuteProgress()
-        p = self.Info()
-        self.progress = PrintedProgress()
-        productSys = p["NtProductType"]
-        #dateOnSys = datetime.strptime(p["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
-        #timestamp = str(int(dateOnSys.timestamp())) 
-        timestamp = ""
-        filename = "/tmp/"+productSys+timestamp+func+".json"
-        return filename
+        funcName = self.temp+self.fileHash+func+".json"
+        return funcName
     
-    def __getFileContent(self,filename) -> dict:
+    def get_file_content(self,funcName) -> dict:
         """
         Get the content of a JSON file and return it as a dictionary.
 
         This method reads the content of a JSON file and parses it into a dictionary.
 
-        :param filename: Path to the JSON file.
-        :type filename: str
+        :param funcName: Path to the JSON file.
+        :type funcName: str
         :return: A dictionary containing the parsed JSON data.
         :rtype: dict
         """
-        with open(filename,'r',encoding="UTF-8") as fichier:
+        with open(funcName,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
     
@@ -209,19 +195,20 @@ class windows(pyDFIRRam):
         :param kwargs: Keyword arguments for the method call.
         :return: A lambda function that executes the __run_commands method for the given key.
         """
-
+        print(key)
         if key not in self.cmds:
             raise ValueError("Unable to handle {key}")
         
         def parse_data_function(**kwargs):
-            filename = key
+            funcName = key
             for k,v in kwargs.items():
-                filename += str(k)
-                filename += str(v)
-            filename = self.__cache_filename(filename)
-            if os.path.isfile(filename):
+                funcName += str(k)
+                funcName += str(v)
+
+            funcName = self.__cache_funcName(funcName)
+            if os.path.isfile(funcName):
                 return self.__in_cache(key)
-            return run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
+            return run_commands(key,funcName,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
         
         return parse_data_function
 
@@ -239,7 +226,7 @@ Save file = {self.savefile}
 format = {self.format}                                   
 ##########################################################""")
     
-    def __definePlatforms(self)-> tuple:
+    def __define_platforms(self)-> tuple:
         """
         Define platform-specific settings.
 
@@ -252,7 +239,7 @@ format = {self.format}
         """
         varTempOS = os.name
         if varTempOS == 'nt':
-            return "ici mettre le path du temp sous windows","windows"
+            return " C:/WINDOWS/Temp","windows"
         elif varTempOS == 'darwin':
             return "/tmp/","mac"
         elif varTempOS == 'posix':
@@ -261,14 +248,14 @@ format = {self.format}
             raise Exception()
     
     
-    ## Est_ce que cette fonction sert a quelque chose ?
-    def save_file(self,out_dataframe,filename:str):
+    
+    def save_file(self,out_dataframe,funcName:str):
         if self.savefile:
-            print(self.filename)
-            with open(self.filename+".json", 'w',encoding="UTF-8") as fichier:
+            print(self.fileHash)
+            with open(self.fileHash+".json", 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe, fichier)
         else:
-            with open(filename, 'w',encoding="UTF-8") as fichier:
+            with open(funcName, 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe,fichier)
     
 
@@ -278,7 +265,7 @@ format = {self.format}
         Rename the nodes in the Tree provided.
 
         This method recursively renames the nodes in the provided tree by renaming 
-        the 'ImageFileName' key to 'name' and '__children' key to 'children'.
+        the 'ImagefuncName' key to 'name' and '__children' key to 'children'.
 
         :param node: The node in the tree to be renamed.
         :type node: dict
@@ -286,14 +273,14 @@ format = {self.format}
         """
         if len(node['__children']) == 0:
             node['children'] = node['__children']
-            node['name'] = node['ImageFileName']
+            node['name'] = node['ImagefuncName']
             del (node['__children'])
-            del (node['ImageFileName'])
+            del (node['ImagefuncName'])
         else:
             node['children'] = node['__children']
-            node['name'] = node['ImageFileName']
+            node['name'] = node['ImagefuncName']
             del (node['__children'])
-            del (node['ImageFileName'])
+            del (node['ImagefuncName'])
             for children in node['children']:
                 self.__rename_pstree(children)
     #
@@ -379,13 +366,7 @@ format = {self.format}
                 data[k] = retkb[index]["Value"]
                 index += 1 
             productSys = data["NtProductType"]
-            try :
-                #dateOnSys = datetime.strptime(data["NtMajorVersion"], "%Y-%m-%d %H:%M:%S")
-                timestamp = str(int(dateOnSys.timestamp()))
-            except:
-                dateOnSys = data["NtMajorVersion"]
-            
-            self.filename = self.temp + productSys + funcName+"."+self.formatSave
-            self.save_file(data,self.filename)
-            self.infofn = self.filename
+            self.fileHash = self.fileHash + funcName+"."+self.formatSave
+            self.save_file(data,self.fileHash)
+            self.infofn = self.fileHash
             return data

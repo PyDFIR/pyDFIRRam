@@ -16,7 +16,6 @@ from volatility3.framework import (
 )
 from pyDFIRRam.utils.renderer.renderer import *
 from pyDFIRRam.utils.handler.handler import *
-
 def save_file(out_dataframe,filename:str,savefile,cache_filename):
     if savefile:
         with open(filename+".json", 'w',encoding="UTF-8") as fichier:
@@ -25,20 +24,23 @@ def save_file(out_dataframe,filename:str,savefile,cache_filename):
         with open(filename, 'w',encoding="UTF-8") as fichier:
             json.dump(out_dataframe,fichier)
 
-def in_cache( func_name,cache_filename):
+def in_cache(func_name, cache_filename):
     """
     Check if there is cached content for a specific function.
     This method reads the cached content from a file and returns the content
     in the appropriate output format.
     :param func_name: The name of the function to check for cached content.
     :type func_name: str
+    :param cache_filename: The filename for caching.
+    :type cache_filename: str
     :return: The cached content in the specified output format.
     :rtype: Depends on the format specified.
     """
-    parquet_filename = cache_filename(func_name) + ".parquet"
-    table = pq.read_table(parquet_filename)
-    content = table.to_pandas()
-    return render_outputFormat(content)
+    target_filename = cache_filename + func_name + ".json" 
+    with open(target_filename, 'r') as file:
+        content = pandas.read_json(file)
+    return render_output_format(content) 
+
 
 def build_basic_context(investigation_file_path,base_config_path,plugin,progress=PrintedProgress(),parallelism=False):
     """
@@ -99,6 +101,7 @@ def runner(context):
 
 def parameters_context(key,**kwargs):
     print(key,set(kwargs.keys()))
+
 
 def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefile,**kwargs):
     
