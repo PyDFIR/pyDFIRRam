@@ -7,18 +7,19 @@
 
 # Utilisation
 ## Installation
+```bash
 python3 -m venv pydfirVenv
-source pydfirVenv/bi,/activate
+source pydfirVenv/bin/activate
 git clone https://github.com/pyDFIR/pyDFIRRam
 cd pyDFIRRam
 poetry build
 poetry install
-
+```
 # Differentes facon d'utiliser
 1. Jupyter notebook
 
 ```bash
-poetry run jupyter notebood
+poetry run jupyter notebook
 ```
 
 2. Ficher de configuration (Outil CLI)
@@ -29,14 +30,14 @@ poetry run jupyter notebood
 ```Python
 from pyDFIRRam import windows
 import os
-winObj1 = windows(os.getcwd()+"memdump.mem") -> Les parametres ici sont tres importants voir documentations
+winObj1 = windows(InvestFile=os.getcwd()+"memdump.mem",Outputformat="dataframe") -> Les parametres ici sont tres importants voir documentations
 
 data1 = winObj1.PsList()
-data2 = winObj2.PsTree()
+data1_1 = winObj1.PsList(pid=[4])
+data1_1 = winObj1.PsList(pid=[4,324,...])
 
 data1
-data2
-....
+data1_1
 ```
 
 Les fonctionnalités prises en charge sont directement dans la documentation
