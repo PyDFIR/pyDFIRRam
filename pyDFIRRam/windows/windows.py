@@ -3,7 +3,7 @@ from typing import Any
 
 
 #PyDFIRModules
-from pyDFIRRam.core.core import build_context,run_commands,getPlugins,runner,json_to_graph, parameters_context
+from pyDFIRRam.core.core import run_commands,getPlugins,runner,json_to_graph, parameters_context, build_basic_context
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 from pyDFIRRam import get_hash
@@ -133,12 +133,12 @@ class windows(pyDFIRRam):
         :return: The cached content in the specified output format.
         :rtype: Depends on the format specified.
         """
+        ## TODO : Voir ici  pour laisser la possibilité de store au format parquet
         if kwargs:
             try:
                 kwargs_key = set(kwargs.keys())
                 kwargs_value = set (kwargs.values())
                 print(kwargs_key,kwargs_value)
-
             except Exception as e:
                 print(f"Aucun des paramètres n'est pris en charge par cette fonction. Les paramètres sont les suivants : {self.choice}")
         target_funcName = self.__cache_funcName(funcName)
@@ -151,10 +151,8 @@ class windows(pyDFIRRam):
         else: 
             return render_outputFormat(format_file, data)
 
-        """table = pq.read_table(target_funcName)
-        content = table.to_pandas()
-        return self.render_outputFormat(content)"""
-    def __cache_funcName(self,func):
+
+    def __cache_filename(self,func):
         """
         Generate a cache funcName based on function name and system information.
 
@@ -183,6 +181,7 @@ class windows(pyDFIRRam):
         with open(funcName,'r',encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
+    
     def __getattr__(self, key):
         """
         Handle attribute access for commands.
@@ -260,7 +259,7 @@ format = {self.format}
                 json.dump(out_dataframe,fichier)
     
 
-    
+    ## Est_ce que cette fonction sert a quelque chose ?
     def __rename_pstree(self,node:dict) -> None:
         """
         Rename the nodes in the Tree provided.
@@ -284,50 +283,50 @@ format = {self.format}
             del (node['ImagefuncName'])
             for children in node['children']:
                 self.__rename_pstree(children)
-    
-    # Va se faire degager d'ici maintenant que j'arrive mieux a gerer les arguments
-    def DumpFiles(self, offset: list):
-        data = []
-        output_path = self.outpath
-        offset_copy = offset.copy()
-        for e in offset:
-            for fn in os.listdir(output_path):
-                if f"file.{hex(e)}" in fn:
-                    if e in offset_copy:
-                        offset_copy.remove(e)
-
-        if offset_copy:
-            for e in offset_copy:
-                volatility3.framework.require_interface_version(2, 0, 0)
-                output_path = self.outpath
-                failures = volatility3.framework.import_files(plugins, True)
-                plugin_list = volatility3.framework.list_plugins()
-                base_config_path = "plugins"
-                context = contexts.Context()
-                context.config['plugins.DumpFiles.virtaddr'] = int(e)
-                command = self.allCommands["DumpFiles"]["plugin"]
-                plugin_list = getPlugins()
-                command = {
-                    'DumpFiles': {
-                        'plugin': plugin_list[command]
-                    }
-                }
-                plugin_list = volatility3.framework.list_plugins()
-                try:
-                    constructed = build_context(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
-                except Exception as e:
-                    print(e)
-                if constructed:
-                    result = JsonRenderer().render(constructed.run())
-                    if len(result) < 1:
-                        del context.config['plugins.DumpFiles.virtaddr']
-                        context.config['plugins.DumpFiles.physaddr'] = int(e)
-                        constructed =build_context(self.dumpPath, context, base_config_path,plugin_list['windows.dumpfiles.DumpFiles'], output_path)
-                        result =JsonRenderer().render(constructed.run())
-                for artifact in result:
-                    artifact = {x.translate({32: None}): y for x, y in artifact.items()}
-                data.append(result)
-        return result
+    #
+    ## TODO : Va se faire degager d'ici maintenant que j'arrive mieux a gerer les arguments
+    #def DumpFiles(self, offset: list):
+    #    data = []
+    #    output_path = self.outpath
+    #    offset_copy = offset.copy()
+    #    for e in offset:
+    #        for fn in os.listdir(output_path):
+    #            if f"file.{hex(e)}" in fn:
+    #                if e in offset_copy:
+    #                    offset_copy.remove(e)
+#
+    #    if offset_copy:
+    #        for e in offset_copy:
+    #            volatility3.framework.require_interface_version(2, 0, 0)
+    #            output_path = self.outpath
+    #            failures = volatility3.framework.import_files(plugins, True)
+    #            plugin_list = volatility3.framework.list_plugins()
+    #            base_config_path = "plugins"
+    #            context = contexts.Context()
+    #            context.config['plugins.DumpFiles.virtaddr'] = int(e)
+    #            command = self.allCommands["DumpFiles"]["plugin"]
+    #            plugin_list = getPlugins()
+    #            command = {
+    #                'DumpFiles': {
+    #                    'plugin': plugin_list[command]
+    #                }
+    #            }
+    #            plugin_list = volatility3.framework.list_plugins()
+    #            try:
+    #                constructed = build_context(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
+    #            except Exception as e:
+    #                print(e)
+    #            if constructed:
+    #                result = JsonRenderer().render(constructed.run())
+    #                if len(result) < 1:
+    #                    del context.config['plugins.DumpFiles.virtaddr']
+    #                    context.config['plugins.DumpFiles.physaddr'] = int(e)
+    #                    constructed =build_context(self.dumpPath, context, base_config_path,plugin_list['windows.dumpfiles.DumpFiles'], output_path)
+    #                    result =JsonRenderer().render(constructed.run())
+    #            for artifact in result:
+    #                artifact = {x.translate({32: None}): y for x, y in artifact.items()}
+    #            data.append(result)
+    #    return result
 
 
     def AllPlugins(self,commandToExec=None,config_file=False) -> dict:
@@ -356,10 +355,10 @@ format = {self.format}
                     'plugin':plugin_list[command]
                     }
                 }
-            context = contexts.Context()
-            kb = runner(dump_filepath,"plugins",command,self.allCommands,self.progress,context)
-            retkb = parse_output(kb)
-            retkb = retkb['Info']['result']
+            self.progress = PrintedProgress()
+            context = build_basic_context(dump_filepath,"plugin",command["Info"]["plugin"])
+            info = runner(context)
+            retkb = parse_output(info)
             header = ["Kernel Base", "DTB", "Symbols", "Is64Bit", "IsPAE", "layer_name", "memory_layer", "KdVersionBlock", "Major/Minor", "MachineType", "KeNumberProcessors", "SystemTime", "NtSystemRoot", "NtProductType", "NtMajorVersion", "NtMinorVersion", "PE MajorOperatingSystemVersion", "PE MinorOperatingSystemVersion", "PE Machine", "PE TimeDateStamp"]
             index = 0
             data = {}

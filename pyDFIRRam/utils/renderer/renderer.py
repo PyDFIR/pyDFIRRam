@@ -54,7 +54,7 @@ class JsonRenderer(text_renderer.CLIRenderer):
                 grid.visit(node=None, function=visitor, initial_accumulator=final_output)
             return final_output[1]
         
-def parse_output(commands_to_execute):
+def parse_output(context):
         """
         Parse the output of executed commands.
 
@@ -66,14 +66,7 @@ def parse_output(commands_to_execute):
         :return: The updated dictionary with command results.
         :rtype: dict
         """
-        for runnable, command_entry in commands_to_execute.items():
-            if command_entry['constructed']:
-                try:
-                    result = JsonRenderer().render(command_entry['constructed'].run())
-                    command_entry['result'] = result
-                except Exception as e:
-                    print(f"Error in run: {e}")
-        return commands_to_execute
+        return JsonRenderer().render(context)
 
 # Faut faire une classe ici
 def render_outputFormat(format,jsondata:dict):
