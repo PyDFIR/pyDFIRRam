@@ -81,12 +81,10 @@ def getPlugins() -> volatility3.framework:
 
 def build_context_args(context,**kwargs):
     for k,v in kwargs.items():
-        print(context.config[k])
         try :
             context.config[k] = v
         except Exception as exxx:
                 print(exxx)
-    print(context.config[k])
     return context
 
 
@@ -98,10 +96,6 @@ def runner(context):
     except Exception as e:
         print(e)
         ...
-
-def parameters_context(key,**kwargs):
-    print(key,set(kwargs.keys()))
-
 
 def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefile,**kwargs):
     
@@ -118,14 +112,6 @@ def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefi
         #TODO : Ici il faut que je set les kwargs pour le context
         my_context = build_context_args(my_context,**kwargs)
     retkb = runner(my_context)
-    print(type(retkb))
     before_formating = parse_output(retkb)
     return render_outputFormat(format,before_formating)
-    #retkb = retkb[func_name]['result']
-    ##save_file(retkb,cache_filename+args_added,savefile,cache_filename)
-    #if func_name == "PsTree":
-    #    format = "json"
-    #    return json_to_graph(retkb)
-    #else:
-    #    return render_outputFormat(format,retkb)
     

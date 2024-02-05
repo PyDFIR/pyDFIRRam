@@ -1,9 +1,7 @@
 from datetime import datetime
 from typing import Any
-
-
 #PyDFIRModules
-from pyDFIRRam.core.core import run_commands,getPlugins,runner,json_to_graph, parameters_context, build_basic_context
+from pyDFIRRam.core.core import run_commands,getPlugins,runner,build_basic_context
 from pyDFIRRam.utils.handler.handler import *
 from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
 from pyDFIRRam import get_hash
@@ -195,17 +193,14 @@ class windows(pyDFIRRam):
         :param kwargs: Keyword arguments for the method call.
         :return: A lambda function that executes the __run_commands method for the given key.
         """
-        print(key)
         if key not in self.cmds:
             raise ValueError("Unable to handle {key}")
-        
+        ## Ici il faut que je verifie si le fichier existe dèjà
         def parse_data_function(**kwargs):
             funcName = key
             for k,v in kwargs.items():
                 funcName += str(k)
                 funcName += str(v)
-
-            funcName = self.__cache_funcName(funcName)
             if os.path.isfile(funcName):
                 return self.__in_cache(key)
             return run_commands(key,funcName,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile,**kwargs)
