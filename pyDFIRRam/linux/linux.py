@@ -1,29 +1,39 @@
 from datetime import datetime
-import pathlib,json
+import pathlib, json
 
 import volatility3.plugins
 import volatility3.symbols
 
-#PyDFIRModules
-from pyDFIRRam.core.core import run_commands,getPlugins,runner,json_to_graph
+# PyDFIRModules
+from pyDFIRRam.core.core import run_commands, getPlugins, runner, json_to_graph
 from pyDFIRRam.utils.handler.handler import *
-from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
+from pyDFIRRam.utils.renderer.renderer import (
+    parse_output,
+    JsonRenderer,
+    render_outputFormat,
+)
 
 
 from pyDFIRRam import pyDFIRRam
-from volatility3.cli import (
-    PrintedProgress,
-    MuteProgress
-)
+from volatility3.cli import PrintedProgress, MuteProgress
 from volatility3.framework import (
     automagic,
     contexts,
     plugins,
 )
 
+
 class linux(pyDFIRRam):
-    def __init__(self, InvestFile, savefile:bool = False,Outputformat:str ="json",
-                                filename:str ="defaultname", showConfig=False, outpath:str = os.getcwd(), progress:bool=False) -> None:
+    def __init__(
+        self,
+        InvestFile,
+        savefile: bool = False,
+        Outputformat: str = "json",
+        filename: str = "defaultname",
+        showConfig=False,
+        outpath: str = os.getcwd(),
+        progress: bool = False,
+    ) -> None:
         """
         Initialize an instance of Windows.
 
@@ -49,23 +59,24 @@ class linux(pyDFIRRam):
             self.cmds = []
             self.filename = filename
             Outformat = Outputformat.lower()
-            self.choice = [
-                "json",
-                "dataframe"
-                ]
+            self.choice = ["json", "dataframe"]
             self.savefile = savefile
             self.filename = filename
             self.dumpPath = InvestFile
             self.formatSave = "json"
-            self.outpath = outpath +"/"
+            self.outpath = outpath + "/"
             self.showconf = showConfig
             if Outformat in self.choice:
                 self.format = Outformat
             else:
-                print(f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet")
+                print(
+                    f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet"
+                )
             if showConfig:
                 self.__print_config()
-            self.allCommands = self.__getFileContent(str(pathlib.Path(__file__).parent) + '/findCommands.json')
+            self.allCommands = self.__getFileContent(
+                str(pathlib.Path(__file__).parent) + "/findCommands.json"
+            )
             self.temp, self.plateform = self.__definePlatforms()
             if progress:
                 self.progress = PrintedProgress()
@@ -74,13 +85,14 @@ class linux(pyDFIRRam):
             self.infofn = ""
         except Exception as e:
             print(e)
+
     def __in_cache(self, funcName):
         """
         Check if there is cached content for a specific function.
-    
+
         This method reads the cached content from a file and returns the content
         in the appropriate output format.
-    
+
         :param funcName: The name of the function to check for cached content.
         :type funcName: str
         :return: The cached content in the specified output format.
@@ -93,13 +105,14 @@ class linux(pyDFIRRam):
         if funcName == "PsTree":
             format_file = "json"
             return json_to_graph(data)
-        else: 
+        else:
             return render_outputFormat(format_file, data)
 
         """table = pq.read_table(parquet_filename)
         content = table.to_pandas()
         return self.render_outputFormat(content)"""
-    def __cache_filename(self,func):
+
+    def __cache_filename(self, func):
         """
         Generate a cache filename based on function name and system information.
 
@@ -112,15 +125,15 @@ class linux(pyDFIRRam):
         :rtype: str
         """
         self.progress = MuteProgress()
-        #p = self.Info()
+        # p = self.Info()
         self.progress = PrintedProgress()
         productSys = p["NtProductType"]
         dateOnSys = datetime.strptime(p["SystemTime"], "%Y-%m-%d %H:%M:%S")
-        timestamp = str(int(dateOnSys.timestamp())) 
-        filename = "/tmp/"+productSys+timestamp+func+".json"
+        timestamp = str(int(dateOnSys.timestamp()))
+        filename = "/tmp/" + productSys + timestamp + func + ".json"
         return filename
-    
-    def __getFileContent(self,filename) -> dict:
+
+    def __getFileContent(self, filename) -> dict:
         """
         Get the content of a JSON file and return it as a dictionary.
 
@@ -131,9 +144,10 @@ class linux(pyDFIRRam):
         :return: A dictionary containing the parsed JSON data.
         :rtype: dict
         """
-        with open(filename,'r',encoding="UTF-8") as fichier:
+        with open(filename, "r", encoding="UTF-8") as fichier:
             content = fichier.read()
         return json.loads(content)
+
     def __getattr__(self, key):
         """
         Handle attribute access for commands.
@@ -150,10 +164,18 @@ class linux(pyDFIRRam):
         if key in self.cmds:
             filename = self.__cache_filename(key)
             if os.path.isfile(filename):
-                return lambda : self.__in_cache(key)
-            else :
-                return lambda : run_commands(key,filename,self.dumpPath,self.format,self.allCommands,self.progress,self.savefile)
-            
+                return lambda: self.__in_cache(key)
+            else:
+                return lambda: run_commands(
+                    key,
+                    filename,
+                    self.dumpPath,
+                    self.format,
+                    self.allCommands,
+                    self.progress,
+                    self.savefile,
+                )
+
     def __print_config(self):
         """
         Print the current configuration settings.
@@ -162,13 +184,15 @@ class linux(pyDFIRRam):
 
         :return: None
         """
-        print(f"""
+        print(
+            f"""
 ######################### Config #########################
-Save file = {self.savefile}                             
-format = {self.format}                                   
-##########################################################""")
-    
-    def __definePlatforms(self)-> tuple:
+Save file = {self.savefile}
+format = {self.format}
+##########################################################"""
+        )
+
+    def __definePlatforms(self) -> tuple:
         """
         Define platform-specific settings.
 
@@ -180,12 +204,11 @@ format = {self.format}
         :raises Exception: If the operating system is not recognized.
         """
         varTempOS = os.name
-        if varTempOS == 'nt':
-            return "ici mettre le path du temp sous windows","windows"
-        elif varTempOS == 'darwin':
-            return "/tmp/","mac"
-        elif varTempOS == 'posix':
-            return "/tmp/","linux"
+        if varTempOS == "nt":
+            return "ici mettre le path du temp sous windows", "windows"
+        elif varTempOS == "darwin":
+            return "/tmp/", "mac"
+        elif varTempOS == "posix":
+            return "/tmp/", "linux"
         else:
             raise Exception()
-    
