@@ -1,8 +1,9 @@
 import io, tempfile, os
-from typing import Dict, Any, List, Tuple,Optional
+from typing import Dict, Any, List, Tuple, Optional
 import volatility3.symbols
 from volatility3.framework.renderers import format_hints
 from volatility3.framework import interfaces
+
 
 class Handler:
     @classmethod
@@ -13,6 +14,7 @@ class Handler:
         Returns:
             type: A file handler class that saves files directly to disk.
         """
+
         class CLIFileHandler(interfaces.plugins.FileHandlerInterface):
             """The FileHandler from Volatility3 CLI."""
 
@@ -21,8 +23,11 @@ class Handler:
                 if output_dir is None:
                     raise TypeError("Output directory is not a string")
                 os.makedirs(output_dir, exist_ok=True)
-                pref_name_array = self.preferred_filename.split('.')
-                filename, extension = os.path.join(output_dir, '.'.join(pref_name_array[:-1])), pref_name_array[-1]
+                pref_name_array = self.preferred_filename.split(".")
+                filename, extension = (
+                    os.path.join(output_dir, ".".join(pref_name_array[:-1])),
+                    pref_name_array[-1],
+                )
                 output_filename = f"{filename}.{extension}"
                 print(f"{output_filename} and directory = {output_dir}")
                 if os.path.exists(output_filename):
@@ -33,11 +38,18 @@ class Handler:
             """A file handler class that saves files directly to disk."""
 
             def __init__(self, filename: str):
-                fd, temp_name = tempfile.mkstemp(suffix='.vol3', prefix='tmp_', dir=output_dir)
-                self._file = io.open(fd, mode='w+b')
+                fd, temp_name = tempfile.mkstemp(
+                    suffix=".vol3", prefix="tmp_", dir=output_dir
+                )
+                self._file = io.open(fd, mode="w+b")
                 CLIFileHandler.__init__(self, filename)
                 for attr in dir(self._file):
-                    if not attr.startswith('_') and attr not in ['closed', 'close', 'mode', 'name']:
+                    if not attr.startswith("_") and attr not in [
+                        "closed",
+                        "close",
+                        "mode",
+                        "name",
+                    ]:
                         setattr(self, attr, getattr(self._file, attr))
                 self._name = temp_name
 
