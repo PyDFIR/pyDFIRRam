@@ -22,24 +22,7 @@ def save_file(out_dataframe,filename:str,savefile,cache_filename):
             json.dump(out_dataframe, fichier)
     else:
         with open(filename, 'w',encoding="UTF-8") as fichier:
-            json.dump(out_dataframe,fichier)
-
-def in_cache(func_name, cache_filename):
-    """
-    Check if there is cached content for a specific function.
-    This method reads the cached content from a file and returns the content
-    in the appropriate output format.
-    :param func_name: The name of the function to check for cached content.
-    :type func_name: str
-    :param cache_filename: The filename for caching.
-    :type cache_filename: str
-    :return: The cached content in the specified output format.
-    :rtype: Depends on the format specified.
-    """
-    target_filename = cache_filename + func_name + ".json" 
-    with open(target_filename, 'r') as file:
-        content = pandas.read_json(file)
-    return render_output_format(content) 
+            json.dump(out_dataframe,fichier) 
 
 
 def build_basic_context(investigation_file_path,base_config_path,plugin,progress=PrintedProgress(),parallelism=False):
