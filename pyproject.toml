@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "rampoetry"
+name = "poetryenv"
 version = "0.1.0"
 description = ""
 authors = ["Braguette <alexis.debrito@ecole2600.com>"]
