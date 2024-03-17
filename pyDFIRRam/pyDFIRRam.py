@@ -1,4 +1,4 @@
-import re, subprocess,pandas,hashlib
+import re, subprocess, pandas, hashlib
 
 class pyDFIRRam:
     def __init__(self) -> None:
@@ -80,17 +80,17 @@ class pyDFIRRam:
             if chunk == b"\x00\x00\x00\x00\x00\x00\x00\x00":
                 print("File Type is unknown and considered as raw")
                 return "raw"
-            
+    ## TODO : Check si c'est pour linux        
     def __grab_logs(self,raw_strings,savelogs=False,namefile="") -> pandas.DataFrame:
         """Grabs DTG|...|LOG_DESC logs, dumps to DF"""
         print('Generating DTG|SEQ_NUM|LOG_TYPE|LOG_LEVEL|LOG_DESC logs.')
         log_re = re.compile('(\d{4}\-\d{2}\-\d{2}T\d{2}\:\d{2}\:\d{2}\.\d{3}Z)\|(.+)\|(.+)\|(.+)\|(.+)')
         print(log_re.findall(raw_strings))
 
-        df = pandas.DataFrame(log_re.findall(raw_strings), columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
+        dataFrame = pandas.DataFrame(log_re.findall(raw_strings), columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
         if savelogs == True:
-            df.to_excel(namefile+".xlsx",columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
-        return df
+            dataFrame.to_excel(namefile+".xlsx",columns=['DTG', 'SEQ_NUM', 'LOG_TYPE', 'LOG_LEVEL', 'LOG_DESC'])
+        return dataFrame
     
     
     def __insmod_info(self,raw_strings)-> list:
@@ -158,7 +158,7 @@ class pyDFIRRam:
         strings_proc = subprocess.Popen('strings {}'.format(file).split(), shell=False, stdout=subprocess.PIPE)
         return strings_proc.communicate()[0].decode()
     
-    def get_hash(self,file_path):
+def get_hash(file_path):
         """
         Calcule le hachage SHA-256 d'un fichier.
 

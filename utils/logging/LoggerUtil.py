@@ -3,6 +3,7 @@ import sys
 
 """
 Tu use the logging utils configuration juste import utils in main file
+nice Franglish u know ;)
 """
 
 
