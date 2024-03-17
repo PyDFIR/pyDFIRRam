@@ -8,3 +8,4 @@
 .ipynb*
 .vscode/*
 *.gv
+*.json

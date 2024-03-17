@@ -68,7 +68,6 @@ def parse_output(context):
         """
         return JsonRenderer().render(context)
 
-# Faut faire une classe ici
 def render_outputFormat(format,jsondata:dict):
     if format=="dataframe":
             try:
@@ -92,3 +91,27 @@ def json_to_graph(res: list, graph=None, node_parent=None) -> Digraph:
             if '__children' in node:
                 json_to_graph(node['__children'], graph, node)
     return graph
+
+    def __rename_pstree(self,node:dict) -> None:
+        """
+        Rename the nodes in the Tree provided.
+
+        This method recursively renames the nodes in the provided tree by renaming 
+        the 'ImagefuncName' key to 'name' and '__children' key to 'children'.
+
+        :param node: The node in the tree to be renamed.
+        :type node: dict
+        :return: None
+        """
+        if len(node['__children']) == 0:
+            node['children'] = node['__children']
+            node['name'] = node['ImagefuncName']
+            del (node['__children'])
+            del (node['ImagefuncName'])
+        else:
+            node['children'] = node['__children']
+            node['name'] = node['ImagefuncName']
+            del (node['__children'])
+            del (node['ImagefuncName'])
+            for children in node['children']:
+                self.__rename_pstree(children)

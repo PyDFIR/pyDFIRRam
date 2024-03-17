@@ -1,5 +1,4 @@
 import pandas,json
-import pyarrow.parquet as pq
 
 from typing import Dict, Any, List, Tuple,Optional
 import volatility3.symbols
@@ -14,6 +13,7 @@ from volatility3.framework import (
     plugins,
     constants
 )
+
 from pyDFIRRam.utils.renderer.renderer import *
 from pyDFIRRam.utils.handler.handler import *
 def save_file(out_dataframe,filename:str,savefile,cache_filename):
@@ -51,8 +51,6 @@ def build_basic_context(investigation_file_path,base_config_path,plugin,progress
     automagics = automagic.choose_automagic(avail_automagics,plugin)
     context.config['automagic.LayerStacker.stackers'] = automagic.stacker.choose_os_stackers(plugin)
     context.config['automagic.LayerStacker.single_location'] ="file://" +  investigation_file_path
-    if parallelism :
-        constants.PARALLELISM = constants.Parallelism(2)
     try:
         if progress == PrintedProgress():
             print("plugin: ", (str(plugin).split(".")[-1])[:-2])
@@ -111,6 +109,7 @@ def run_commands(func_name,filename,dumpPath,format,all_commands,progress,savefi
     if kwargs:
         #TODO : Ici il faut que je set les kwargs pour le context
         my_context = build_context_args(my_context,**kwargs)
+
     retkb = runner(my_context)
     before_formating = parse_output(retkb)
     return render_outputFormat(format,before_formating)

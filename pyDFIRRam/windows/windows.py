@@ -3,7 +3,7 @@ from typing import Any
 #PyDFIRModules
 from pyDFIRRam.core.core import run_commands,getPlugins,runner,build_basic_context
 from pyDFIRRam.utils.handler.handler import *
-from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat
+from pyDFIRRam.utils.renderer.renderer import parse_output,JsonRenderer,render_outputFormat, json_to_graph
 from pyDFIRRam import get_hash
 
 from pyDFIRRam import pyDFIRRam
@@ -41,6 +41,7 @@ class windows(pyDFIRRam):
 
     def __initialize_attributes(self, InvestFile, savefile, Outputformat, funcName, showConfig, outpath, progress):
         self.cmds = [
+                "DumpFiles",
                 "PsList",
                 "HiveList",
                 "Crashinfo", # Verifier qu'il s'agit bien d'un crashDump
@@ -95,7 +96,7 @@ class windows(pyDFIRRam):
         self.fileHash = get_hash(InvestFile)
         Outformat = Outputformat.lower()
         self.choice = ["json", "dataframe"]
-        self.savefile = savefile
+        self.savefile = self.__cache_filename(funcName)
         self.dumpPath = InvestFile
         self.formatSave = "json" if Outformat in self.choice else None
         self.outpath = os.path.join(outpath, "")  # Ensure proper directory path
@@ -113,7 +114,6 @@ class windows(pyDFIRRam):
             self.progress = PrintedProgress()
         else:
             self.progress = MuteProgress()
-
         self.infofn = ""
 
     def showFunctions(self) -> list:
@@ -246,83 +246,12 @@ format = {self.format}
     
     def save_file(self,out_dataframe,funcName:str):
         if self.savefile:
-            print(self.fileHash)
-            with open(self.fileHash+".json", 'w',encoding="UTF-8") as fichier:
+            with open(self.savefile, 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe, fichier)
         else:
-            with open(funcName, 'w',encoding="UTF-8") as fichier:
+            with open(self.savefile, 'w',encoding="UTF-8") as fichier:
                 json.dump(out_dataframe,fichier)
     
-
-    ## Est_ce que cette fonction sert a quelque chose ?
-    def __rename_pstree(self,node:dict) -> None:
-        """
-        Rename the nodes in the Tree provided.
-
-        This method recursively renames the nodes in the provided tree by renaming 
-        the 'ImagefuncName' key to 'name' and '__children' key to 'children'.
-
-        :param node: The node in the tree to be renamed.
-        :type node: dict
-        :return: None
-        """
-        if len(node['__children']) == 0:
-            node['children'] = node['__children']
-            node['name'] = node['ImagefuncName']
-            del (node['__children'])
-            del (node['ImagefuncName'])
-        else:
-            node['children'] = node['__children']
-            node['name'] = node['ImagefuncName']
-            del (node['__children'])
-            del (node['ImagefuncName'])
-            for children in node['children']:
-                self.__rename_pstree(children)
-    #
-    ## TODO : Va se faire degager d'ici maintenant que j'arrive mieux a gerer les arguments
-    #def DumpFiles(self, offset: list):
-    #    data = []
-    #    output_path = self.outpath
-    #    offset_copy = offset.copy()
-    #    for e in offset:
-    #        for fn in os.listdir(output_path):
-    #            if f"file.{hex(e)}" in fn:
-    #                if e in offset_copy:
-    #                    offset_copy.remove(e)
-#
-    #    if offset_copy:
-    #        for e in offset_copy:
-    #            volatility3.framework.require_interface_version(2, 0, 0)
-    #            output_path = self.outpath
-    #            failures = volatility3.framework.import_files(plugins, True)
-    #            plugin_list = volatility3.framework.list_plugins()
-    #            base_config_path = "plugins"
-    #            context = contexts.Context()
-    #            context.config['plugins.DumpFiles.virtaddr'] = int(e)
-    #            command = self.allCommands["DumpFiles"]["plugin"]
-    #            plugin_list = getPlugins()
-    #            command = {
-    #                'DumpFiles': {
-    #                    'plugin': plugin_list[command]
-    #                }
-    #            }
-    #            plugin_list = volatility3.framework.list_plugins()
-    #            try:
-    #                constructed = build_context(self.dumpPath, context, base_config_path,command["DumpFiles"]["plugin"], output_path)
-    #            except Exception as e:
-    #                print(e)
-    #            if constructed:
-    #                result = JsonRenderer().render(constructed.run())
-    #                if len(result) < 1:
-    #                    del context.config['plugins.DumpFiles.virtaddr']
-    #                    context.config['plugins.DumpFiles.physaddr'] = int(e)
-    #                    constructed =build_context(self.dumpPath, context, base_config_path,plugin_list['windows.dumpfiles.DumpFiles'], output_path)
-    #                    result =JsonRenderer().render(constructed.run())
-    #            for artifact in result:
-    #                artifact = {x.translate({32: None}): y for x, y in artifact.items()}
-    #            data.append(result)
-    #    return result
-
 
     def AllPlugins(self,commandToExec=None,config_file=False) -> dict:
         data=[]
