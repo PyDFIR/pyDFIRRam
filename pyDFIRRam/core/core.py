@@ -26,7 +26,6 @@ def build_basic_context(
     base_config_path,
     plugin,
     progress=PrintedProgress(),
-    parallelism=False,
 ):
     """
     Cette fonction va permettre de set le minimum pour le profil. Faire un context simplissime
@@ -101,8 +100,8 @@ def run_commands(
         investigation_file_path=dumpPath,
         base_config_path="plugins",
         plugin=command[func_name]["plugin"],
-        parallelism=False,
     )
+    print(dir(my_context))
     if kwargs:
         # TODO : Ici il faut que je set les kwargs pour le context
         my_context = build_context_args(my_context, **kwargs)
