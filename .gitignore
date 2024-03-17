@@ -1,11 +1,12 @@
 *.mem
 /*/__pycache__
-/dist/
+dist/
 /rampoetry/*
 */*/__pycache__/
 .vscode/
 *.ipynb
 .ipynb*
-.vscode/*
 *.gv
 *.json
+.idea/
+.ipynb_checkpoint/
