@@ -122,7 +122,7 @@ class windows(pyDFIRRam):
         self.fileHash = get_hash(InvestFile)
         Outformat = Outputformat.lower()
         self.choice = ["json", "dataframe"]
-        self.savefile = self.__cache_filename(funcName)
+        self.savefile = ""
         self.dumpPath = InvestFile
         self.formatSave = "json" if Outformat in self.choice else None
         self.outpath = os.path.join(outpath, "")  # Ensure proper directory path
@@ -193,8 +193,7 @@ class windows(pyDFIRRam):
         :return: The generated cache funcName.
         :rtype: str
         """
-        funcName = self.temp + self.fileHash + func + ".json"
-        return funcName
+        self.savefile = self.temp + self.fileHash + func + ".json"
 
     def get_file_content(self, funcName) -> dict:
         """
@@ -225,11 +224,12 @@ class windows(pyDFIRRam):
         :return: A lambda function that executes the __run_commands method for the given key.
         """
         if key not in self.cmds:
-            raise ValueError("Unable to handle {key}")
+            raise ValueError(f"Unable to handle {key}")
 
         ## Ici il faut que je verifie si le fichier existe dèjà
         def parse_data_function(**kwargs):
             funcName = key
+            self.__cache_filename(funcName)
             for k, v in kwargs.items():
                 funcName += str(k)
                 funcName += str(v)
@@ -350,6 +350,6 @@ format = {self.format}
                 index += 1
             productSys = data["NtProductType"]
             self.fileHash = self.fileHash + funcName + "." + self.formatSave
-            self.save_file(data, self.fileHash)
+            #self.save_file(data, self.fileHash)
             self.infofn = self.fileHash
             return data
