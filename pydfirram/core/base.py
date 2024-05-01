@@ -1,10 +1,10 @@
 """todo"""
 
 from enum import Enum
-from typing import List, Dict, Type
+from typing import List, Dict, Any
 from dataclasses import dataclass
 
-from volatility3 import framework, plugins, interfaces
+from volatility3 import framework, plugins
 
 
 class OperatingSystem(Enum):
@@ -49,7 +49,7 @@ class Generic:
     def __str__(self):
         return f"Generic OS: {self.os.name}"
 
-    def get_plugins_list(self) -> Dict[str, Type[interfaces.plugins.PluginInterface]]:
+    def get_plugins_list(self) -> Dict[str, Any]:
         """Returns a list of available plugins for the OS."""
         framework.import_files(plugins, True)
         plugin_list = framework.list_plugins()
