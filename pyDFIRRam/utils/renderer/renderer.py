@@ -87,14 +87,14 @@ def parse_output(context):
     return JsonRenderer().render(context)
 
 
-def render_outputFormat(format, jsondata: dict):
-    if format == "dataframe":
+def render_outputFormat(format_data, jsondata: dict):
+    if format_data == "dataframe":
         try:
             return pandas.DataFrame(jsondata)
         except:
             print("Can't transform data to dataframe")
             return jsondata
-    elif format == "json":
+    elif format_data == "json":
         return jsondata
 
 

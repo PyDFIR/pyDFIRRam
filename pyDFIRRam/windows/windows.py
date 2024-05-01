@@ -28,20 +28,20 @@ import volatility3.symbols
 class windows(pyDFIRRam):
     def __init__(
         self,
-        InvestFile,
+        memory_file: str ,
         savefile: bool = False,
-        Outputformat: str = "json",
+        output_format: str = "json",
         funcName: str = "defaultname",
         showConfig=False,
         outpath=os.getcwd(),
         progress: bool = False,
     ) -> None:
         try:
-            self.__validate_file(InvestFile)
+            self.__validate_file(memory_file)
             self.__initialize_attributes(
-                InvestFile,
+                memory_file,
                 savefile,
-                Outputformat,
+                output_format,
                 funcName,
                 showConfig,
                 outpath,
@@ -52,20 +52,20 @@ class windows(pyDFIRRam):
         except Exception as e:
             print(f"An unexpected error occurred during initialization: {e}")
 
-    def __validate_file(self, InvestFile):
-        if not os.path.isfile(InvestFile):
-            raise FileNotFoundError(f"The file {InvestFile} does not exist.")
+    def __validate_file(self, memory_file: str) -> None:
+        if not os.path.isfile(memory_file):
+            raise FileNotFoundError(f"The file {memory_file} does not exist.")
 
     def __initialize_attributes(
         self,
-        InvestFile,
-        savefile,
-        Outputformat,
-        funcName,
-        showConfig,
-        outpath,
-        progress,
-    ):
+        memory_file: str,
+        savefile: bool,
+        output_format: str,
+        funcName: str,
+        showConfig: bool,
+        outpath: str,
+        progress: bool,
+    ) -> None:
         self.cmds = [
             "DumpFiles",
             "PsList",
@@ -119,20 +119,20 @@ class windows(pyDFIRRam):
             "Hivescan",
             "PrintKey",
         ]
-        self.fileHash = get_hash(InvestFile)
-        Outformat = Outputformat.lower()
+        self.fileHash = get_hash(memory_file)
+        outformat = output_format.lower()
         self.choice = ["json", "dataframe"]
         self.savefile = ""
-        self.dumpPath = InvestFile
-        self.formatSave = "json" if Outformat in self.choice else None
+        self.dumpPath = memory_file
+        self.formatSave = "json" if outformat in self.choice else None
         self.outpath = os.path.join(outpath, "")  # Ensure proper directory path
         self.showconf = showConfig
-        if Outformat not in self.choice:
+        if outformat not in self.choice:
             print(
-                f"{Outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet"
+                f"{outformat} non pris en charge. Les formats pris en charge sont :\n\t-xlsx\n\t-csv\n\t-json\n\t-parquet"
             )
         else:
-            self.format = Outformat
+            self.format = outformat
         if showConfig:
             self.__print_config()
         self.allCommands = self.get_file_content(
@@ -179,7 +179,7 @@ class windows(pyDFIRRam):
             format_file = "json"
             return json_to_graph(data)
         else:
-            return render_outputFormat(format_file, data)
+            return render_output_format(format_file, data)
 
     def __cache_filename(self, func):
         """

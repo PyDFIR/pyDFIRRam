@@ -88,9 +88,9 @@ def runner(context):
         print(e)
         ...
 
-
+## TODO: Revoir les parametres passé dans cette fonction
 def run_commands(
-    func_name, filename, dumpPath, format, all_commands, progress, savefile, **kwargs
+    func_name, filename, dumpPath, format_save, all_commands, progress, savefile, **kwargs
 ):
     ## TODO : Faire une fonction pour set le dict de commands
     command = all_commands[func_name]["plugin"]
@@ -101,11 +101,10 @@ def run_commands(
         base_config_path="plugins",
         plugin=command[func_name]["plugin"],
     )
-    print(dir(my_context))
     if kwargs:
         # TODO : Ici il faut que je set les kwargs pour le context
         my_context = build_context_args(my_context, **kwargs)
 
     retkb = runner(my_context)
     before_formating = parse_output(retkb)
-    return render_outputFormat(format, before_formating)
+    return render_outputFormat(format_save, before_formating)
