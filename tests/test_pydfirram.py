@@ -12,3 +12,12 @@ def test_generic():
 
     assert str(generic) == "Generic OS: WINDOWS"
     assert generic.get_plugins_list() == []
+
+def test_create_index_plugins():
+    from pydfirram.core.base import Generic, OperatingSystem
+    os = OperatingSystem.WINDOWS
+
+    generic = Generic(os)
+
+    assert str(generic) == "Generic OS: WINDOWS"
+    assert generic.create_index_plugins()
