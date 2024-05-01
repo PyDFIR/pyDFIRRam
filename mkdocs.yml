@@ -1,0 +1,46 @@
+site_name: PyDFIRRam
+site_url: https://PyDFIR.github.io/PyDFIRRam
+site_description: Documentation for PyDFIRRam
+
+repo_name: PyDFIR/PyDFIRRam
+repo_url: https://github.com/PyDFIR/PyDFIRRam
+
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.action.edit
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.path
+    - navigation.top
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - mkdocstrings
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - git-committers:
+      repository: PyDFIR/PyDFIRRam
+      branch: main
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+nav:
+  - index.md
+  - tutorials.md
+  - how-to-guides.md
+  - Reference:
+      - Index: reference/reference.md
+  - explanation.md
