@@ -1,9 +1,12 @@
+from pathlib import Path
+
+from pydfirram.core.base import Generic, OperatingSystem
+
+
 def test_generic():
-    from pydfirram.core.base import Generic, OperatingSystem
-
     os = OperatingSystem.WINDOWS
+    dumpfile = Path("data/dump.raw")
 
-    generic = Generic(os)
+    generic = Generic(os, dumpfile)
 
-    assert str(generic) == "Generic OS: WINDOWS"
-    generic.get_plugins_list()
+    assert len(generic.plugins) > 0
