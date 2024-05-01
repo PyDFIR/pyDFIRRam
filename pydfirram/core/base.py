@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from dataclasses import dataclass
 from pathlib import Path
 
+from loguru import logger
 from volatility3 import framework, plugins
 
 
@@ -51,6 +52,8 @@ class Generic:
         self.plugins: List[PluginEntry] = self.get_all_plugins()
         self.dump_file = dump_file
 
+        logger.info(f"Generic OS initialized: {self.os}")
+
     def get_all_plugins(self) -> List[PluginEntry]:
         """Returns all plugins for the OS."""
         plugin_list = self.get_plugins_list()
@@ -60,7 +63,10 @@ class Generic:
 
     def get_plugins_list(self) -> Dict[str, Any]:
         """Returns a list of available volatility3 plugins for the OS."""
-        framework.import_files(plugins, True)
+        failures = framework.import_files(plugins, True)
+        if failures:
+            logger.warning(f"Failed to import some plugins: {failures}")
+
         plugin_list = framework.list_plugins()
 
         return plugin_list
@@ -85,5 +91,7 @@ class Generic:
                 continue
 
             parsed.append(plugin)  # type: ignore
+
+        logger.info(f"Found {len(parsed)} plugins for {self.os}")
 
         return parsed
