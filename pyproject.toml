@@ -13,9 +13,10 @@ volatility3 = "^2.5.2"
 pandas = "^2.2.2"
 regex = "^2024.4.28"
 graphviz = "^0.20.3"
+loguru = "^0.7.2"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^6.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.6"
