@@ -104,6 +104,19 @@ class Context:
 
         return constructed
 
+    def handle_kwargs(self, kwargs: Dict[str, Any]) -> None:
+        """Handle keyword arguments."""
+        for key, value in kwargs.items():
+            setattr(self.context.config, key, value)
+
+    def run(self) -> Any:
+        """Run the plugin in the context."""
+        try:
+            return self.context.run()
+        except VolatilityExceptions.UnsatisfiedException as e:
+            logger.error(f"Failed to run plugin: {e}")
+            raise e
+
     def get_available_automagics(self) -> List[interfaces.automagic.AutomagicInterface]:
         """Returns a list of available automagics."""
         return automagic.available(self.context)
@@ -144,16 +157,27 @@ class Generic:
     #     """Handle attribute acces for plugins."""
     #     # todo
 
-    def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
+    def build_plugin(self, plugin: PluginEntry, **kwargs: Any) -> None:
         """
-        Run a plugin with the given arguments.
+        Build a plugin with the given arguments.
         """
         # Create basic context
         self.context = Context(self.os, self.dump_file, plugin)
 
         # Extend it with kwargs
+        self.context.handle_kwargs(kwargs)
+
+        # Build the context
+        self.context.build()
+
+    def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
+        """
+        Run a plugin with the given arguments.
+        """
+        self.build_plugin(plugin, **kwargs)
 
         # Run the plugin
+        return self.context.run()
 
     def validate_dump_file(self, dump_file: Path) -> Path:
         """Validates the dump file."""
@@ -161,6 +185,14 @@ class Generic:
             raise FileNotFoundError(f"The file {dump_file} does not exist.")
         # TODO: validate the dump file with volatility handlers
         return dump_file
+
+    def get_plugin(self, name: str) -> PluginEntry:
+        """Returns a plugin by name."""
+        for plugin in self.plugins:
+            if plugin.name == name:
+                return plugin
+
+        raise ValueError(f"Plugin {name} not found for {self.os}")
 
     def get_all_plugins(self) -> List[PluginEntry]:
         """Returns all plugins for the OS."""
