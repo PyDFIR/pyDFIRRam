@@ -1,5 +1,6 @@
-from operator import ge
 from pathlib import Path
+
+from volatility3.cli import text_renderer
 
 from pydfirram.core.base import Generic, OperatingSystem
 
@@ -28,4 +29,5 @@ def test_generic_build():
 
     print("Running plugin: ", plugin)
 
-    generic.run_plugin(plugin)
+    output = generic.run_plugin(plugin)
+    text_renderer.PrettyTextRenderer().render(output)
