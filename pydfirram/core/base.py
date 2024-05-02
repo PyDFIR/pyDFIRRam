@@ -47,15 +47,7 @@ class PluginEntry:
     interface: interfaces.plugins.PluginInterface
 
     def __repr__(self) -> str:
-        return f"PluginEntry({self.type}, {self.name}, {self.path})"
-
-    def get_full_path(self, operating_system: OperatingSystem) -> str:
-        """Returns the full path of the plugin."""
-        return f"{operating_system.value}{self.path}.{self.name}"
-
-    def get_plugin_interface(self) -> interfaces.plugins.PluginInterface:
-        """Returns the plugin interface."""
-        return plugins.get_plugin(self.get_full_path())
+        return f"PluginEntry({self.type}, {self.name}, {self.interface})"
 
 
 class Context:
@@ -88,7 +80,7 @@ class Context:
     def build(self) -> interfaces.plugins.PluginInterface:
         """Build the context.
         todo"""
-        plugin = self.plugin.get_full_path(self.os)
+        plugin = self.plugin.interface
         available_automagics = self.get_available_automagics()
 
         automagics = automagic.choose_automagic(available_automagics, plugin)
