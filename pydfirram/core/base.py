@@ -192,12 +192,13 @@ class Generic:
             name = elements[-1]
 
             if platform not in OperatingSystem.to_list():
-                plugin = PluginEntry(PluginType.GENERIC, name, interface)
+                type_ = PluginType.GENERIC
             elif platform == self.os.value:
-                plugin = PluginEntry(PluginType.SPECIFIC, name, interface)
+                type_ = PluginType.SPECIFIC
             else:
                 continue
 
+            plugin = PluginEntry(type_, name, interface)
             parsed.append(plugin)  # type: ignore
 
         logger.info(f"Found {len(parsed)} plugins for {self.os}")
