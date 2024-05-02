@@ -1,3 +1,4 @@
+from operator import ge
 from pathlib import Path
 
 from pydfirram.core.base import Generic, OperatingSystem
@@ -20,9 +21,9 @@ def test_generic_build():
 
     generic = Generic(os, dumpfile)
 
-    plugin = generic.plugins[0]  # random plugin
+    plugin = generic.get_plugin("Banners")
+    assert plugin.name == "Banners"
+
+    print("Running plugin: ", plugin)
 
     generic.run_plugin(plugin)
-    assert generic.context is not None
-
-    generic.context.build()
