@@ -12,6 +12,7 @@ Classes:
     Generic
 """
 
+from ast import dump
 import os
 from dataclasses import dataclass
 from enum import Enum
@@ -120,14 +121,6 @@ class Context:
         self.context = contexts.Context()
         self.plugin = plugin
 
-    # def __setattr__(self, name: str, value: Any) -> None:
-    #     """Set an attribute."""
-    #     setattr(self.context, name, value)
-
-    # def __getattr__(self, name: str) -> Any:
-    #     """Get an attribute."""
-    #     return getattr(self.context, name)
-
     def build(self) -> interfaces.plugins.PluginInterface:
         """Build a basic context for the provided plugin.
 
@@ -191,11 +184,22 @@ class Context:
             raise e
 
     def get_available_automagics(self) -> List[interfaces.automagic.AutomagicInterface]:
-        """Returns a list of available automagics."""
+        """Returns a list of available volatility3 automagics.
+
+        Returns:
+            List[interfaces.automagic.AutomagicInterface]: A list of available automagics.
+        """
         return automagic.available(self.context)
 
     def automagics(self) -> List[interfaces.automagic.AutomagicInterface]:
-        """Returns a list of automagics."""
+        """Returns a list of volatility3 automagics.
+
+        Returns:
+            List[interfaces.automagic.AutomagicInterface]: A list of automagics.
+
+        Raises:
+            VolatilityExceptions.UnsatisfiedException: If no automagic can be chosen.
+        """
         available_automagics = self.get_available_automagics()
 
         return automagic.choose_automagic(
@@ -204,35 +208,71 @@ class Context:
         )
 
     def os_stackers(self) -> List[interfaces.automagic.AutomagicInterface]:
-        """Returns a list of stackers for the OS."""
+        """Returns a list of stackers for the OS.
+
+        Returns:
+            List[interfaces.automagic.AutomagicInterface]: A list of stackers.
+        """
         return automagic.stacker.choose_os_stackers(self.plugin.interface)
 
     def get_dump_file_location(self) -> str:
-        """Returns the dump file location."""
+        """Returns the dump file location.
+
+        Returns:
+            str: The dump file location formatted as a URL.
+        """
         return "file://" + self.dump_file.absolute().as_posix()
 
 
 class Generic:
-    """Represents a generic OS to be parsed by volatility."""
+    """Generic OS wrapper to be used with volatility3
+
+    This class provides a way to interact with volatility3 plugins in a more
+    abstract way. It allows to automatically get all available plugins for a
+    specific OS and run them with the required arguments.
+
+    It aims to be inherited by specific OS wrappers like Windows, Linux or MacOS.
+
+    Attributes:
+        os (OperatingSystem): The operating system.
+        plugins (List[PluginEntry]): The list of plugins.
+        dump_file (Path): The dump file path.
+        context (Context): The context.
+    """
 
     def __init__(self, operating_system: OperatingSystem, dump_file: Path):
-        """Initializes a generic OS, automatically getting all available
-        Volatility3 plugins for the OS.
+        """Initializes a generic OS.
+
+        Automatically get all available Volatility3 plugins for the OS.
+
+        Args:
+            operating_system (OperatingSystem): The operating system.
+            dump_file (Path): The dump file path.
+
+        Raises:
+            FileNotFoundError: If the dump file does not exist.
         """
+        self.validate_dump_file(dump_file)
+
         self.os = operating_system
         self.plugins: List[PluginEntry] = self.get_all_plugins()
-        self.dump_file = self.validate_dump_file(dump_file)
+        self.dump_file = dump_file
         self.context = None
 
         logger.info(f"Generic OS initialized: {self.os}")
 
-    # def __getattribute__(self, name: str) -> Any:
-    #     """Handle attribute acces for plugins."""
-    #     # todo
-
     def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
-        """
-        Run a plugin with the given arguments.
+        """Run a volatility3 plugin with the given arguments.
+
+        Args:
+            plugin (PluginEntry): The plugin entry.
+            **kwargs (Any): The keyword arguments.
+
+        Returns:
+            Any: The result of the plugin.
+
+        Raises:
+            ValueError: If the context is not built.
         """
         # Create basic context
         self.context = Context(self.os, self.dump_file, plugin)
@@ -249,15 +289,34 @@ class Generic:
 
         return context.run()
 
-    def validate_dump_file(self, dump_file: Path) -> Path:
-        """Validates the dump file."""
+    def validate_dump_file(self, dump_file: Path) -> bool:
+        """Validate dump file location.
+
+        Args:
+            dump_file (Path): The dump file path.
+
+        Returns:
+            bool: True if the file exists.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+        """
         if not dump_file.is_file():
             raise FileNotFoundError(f"The file {dump_file} does not exist.")
-        # TODO: validate the dump file with volatility handlers
-        return dump_file
+        return True
 
     def get_plugin(self, name: str) -> PluginEntry:
-        """Returns a plugin by name."""
+        """Fetches a plugin by its name from the list of plugins.
+
+        Args:
+            name (str): The plugin name.
+
+        Returns:
+            PluginEntry: The plugin entry.
+
+        Raises:
+            ValueError: If the plugin is not found.
+        """
         for plugin in self.plugins:
             if plugin.name == name:
                 return plugin
@@ -265,14 +324,26 @@ class Generic:
         raise ValueError(f"Plugin {name} not found for {self.os}")
 
     def get_all_plugins(self) -> List[PluginEntry]:
-        """Returns all plugins for the OS."""
+        """Get all available plugins for the specified OS.
+
+        Returns:
+            List[PluginEntry]: A list of plugins for the specified OS
+            or all available plugins if the OS is not supported.
+
+        Raises:
+            ValueError: If the plugin is not found.
+        """
         plugin_list = self.get_plugins_list()
         parsed_plugins = self.parse_plugins_list(plugin_list)
 
         return parsed_plugins
 
     def get_plugins_list(self) -> Dict[str, Any]:
-        """Returns a list of available volatility3 plugins for the OS."""
+        """Get a list of available volatility3 plugins for the OS.
+
+        Returns:
+            Dict[str, Any]: A dictionary of plugins.
+        """
         failures = framework.import_files(plugins, True)
         if failures:
             logger.warning(f"Failed to import some plugins: {failures}")
@@ -282,8 +353,16 @@ class Generic:
         return plugin_list
 
     def parse_plugins_list(self, plugin_list: Dict[str, Any]) -> List[PluginEntry]:
-        """todo
-        Parsing of get_plugins
+        """Parse the list of available volatility3 plugins.
+
+        The plugin list is a dictionary where the key is the plugin name
+        and the value is the plugin interface.
+
+        Args:
+            plugin_list (Dict[str, Any]): The plugin list.
+
+        Returns:
+            List[PluginEntry]: A list of PluginEntry.
         """
         parsed: List[PluginEntry] = list()
 
