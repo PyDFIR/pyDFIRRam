@@ -1,18 +1,19 @@
 """todo"""
 
 import os
-
-from enum import Enum
-from typing import List, Dict, Any, Type
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-
-from pydfirram.core.handler import create_file_handler
+from typing import Any, Dict, List
 
 from loguru import logger
 from volatility3 import framework, plugins
-from volatility3.framework import interfaces, contexts, automagic
+from volatility3.framework import automagic, contexts
+from volatility3.framework import exceptions as VolatilityExceptions
+from volatility3.framework import interfaces
 from volatility3.framework.plugins import construct_plugin
+
+from pydfirram.core.handler import create_file_handler
 
 
 class OperatingSystem(Enum):
@@ -78,33 +79,51 @@ class Context:
         """Build the context.
         todo"""
         plugin = self.plugin.interface
-        available_automagics = self.get_available_automagics()
-
-        automagics = automagic.choose_automagic(available_automagics, plugin)  # type: ignore
-
-        os_stackers = automagic.stacker.choose_os_stackers(plugin)
-        self.context.config[self.KEY_STACKERS] = os_stackers
-
-        dump_file_location = "file://" + self.dump_file.absolute().as_posix()
-        self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
-
+        automagics = self.automagics()
+        dump_file_location = self.get_dump_file_location()
         base_config_path = "plugins"
         file_handler = create_file_handler(os.getcwd())
 
-        constructed = construct_plugin(
-            self.context,
-            automagics,
-            plugin,
-            base_config_path,
-            None,  # no progress callback for now
-            file_handler,
-        )
+        self.context.config[self.KEY_STACKERS] = self.os_stackers()
+        self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
+
+        try:
+            # Construct the plugin, clever magic figures out how to
+            # fulfill each requirement that might not be fulfilled
+            constructed = construct_plugin(
+                self.context,
+                automagics,
+                plugin,  # type: ignore
+                base_config_path,
+                None,  # no progress callback for now
+                file_handler,
+            )
+        except VolatilityExceptions.UnsatisfiedException as e:
+            logger.error(f"Failed to build plugin: {e}")
+            raise e
 
         return constructed
 
     def get_available_automagics(self) -> List[interfaces.automagic.AutomagicInterface]:
         """Returns a list of available automagics."""
         return automagic.available(self.context)
+
+    def automagics(self) -> List[interfaces.automagic.AutomagicInterface]:
+        """Returns a list of automagics."""
+        available_automagics = self.get_available_automagics()
+
+        return automagic.choose_automagic(
+            available_automagics,  # type: ignore
+            self.plugin.interface,  # type: ignore
+        )
+
+    def os_stackers(self) -> List[interfaces.automagic.AutomagicInterface]:
+        """Returns a list of stackers for the OS."""
+        return automagic.stacker.choose_os_stackers(self.plugin.interface)
+
+    def get_dump_file_location(self) -> str:
+        """Returns the dump file location."""
+        return "file://" + self.dump_file.absolute().as_posix()
 
 
 class Generic:
