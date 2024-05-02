@@ -104,7 +104,7 @@ class Context:
 
         return constructed
 
-    def handle_kwargs(self, kwargs: Dict[str, Any]) -> None:
+    def add_arguments(self, kwargs: Dict[str, Any]) -> None:
         """Handle keyword arguments."""
         for key, value in kwargs.items():
             setattr(self.context.config, key, value)
@@ -157,27 +157,24 @@ class Generic:
     #     """Handle attribute acces for plugins."""
     #     # todo
 
-    def build_plugin(self, plugin: PluginEntry, **kwargs: Any) -> None:
+    def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
         """
-        Build a plugin with the given arguments.
+        Run a plugin with the given arguments.
         """
         # Create basic context
         self.context = Context(self.os, self.dump_file, plugin)
 
         # Extend it with kwargs
-        self.context.handle_kwargs(kwargs)
+        self.context.add_arguments(kwargs)
 
         # Build the context
-        self.context.build()
-
-    def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
-        """
-        Run a plugin with the given arguments.
-        """
-        self.build_plugin(plugin, **kwargs)
+        context = self.context.build()
 
         # Run the plugin
-        return self.context.run()
+        if self.context is None:
+            raise ValueError("Context not built.")
+
+        return context.run()
 
     def validate_dump_file(self, dump_file: Path) -> Path:
         """Validates the dump file."""
