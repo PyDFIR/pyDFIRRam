@@ -3,19 +3,16 @@
 import os
 
 from enum import Enum
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Type
 from dataclasses import dataclass
 from pathlib import Path
+
+from pydfirram.core.handler import create_file_handler
 
 from loguru import logger
 from volatility3 import framework, plugins
 from volatility3.framework import interfaces, contexts, automagic
 from volatility3.framework.plugins import construct_plugin
-
-# TODO:
-# get the plugin interface in the plugin entry from the parsing
-# finish the build function in context
-# wrap the run plugin through the context
 
 
 class OperatingSystem(Enum):
@@ -83,7 +80,7 @@ class Context:
         plugin = self.plugin.interface
         available_automagics = self.get_available_automagics()
 
-        automagics = automagic.choose_automagic(available_automagics, plugin)
+        automagics = automagic.choose_automagic(available_automagics, plugin)  # type: ignore
 
         os_stackers = automagic.stacker.choose_os_stackers(plugin)
         self.context.config[self.KEY_STACKERS] = os_stackers
@@ -91,13 +88,16 @@ class Context:
         location = "file://" + self.dump_file.as_posix()
         self.context.config[self.KEY_SINGLE_LOCATION] = location
 
+        base_config_path = "plugins"
+        file_handler = create_file_handler(os.getcwd())
+
         constructed = construct_plugin(
             self.context,
             automagics,
             plugin,
             base_config_path,
-            None,
-            None,  # TODO: add file handler
+            None,  # no progress callback for now
+            file_handler,
         )
 
         return constructed
@@ -130,6 +130,7 @@ class Generic:
         Run a plugin with the given arguments.
         """
         # Create basic context
+        self.context = Context(self.os, self.dump_file, plugin)
 
         # Extend it with kwargs
 
