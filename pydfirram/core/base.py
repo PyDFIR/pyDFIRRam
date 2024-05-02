@@ -10,6 +10,18 @@ Classes:
     PluginEntry
     Context
     Generic
+
+Example:
+    The module can be used as follows:
+
+        $ python3
+        >>> from pydfirram.core.base import Generic, OperatingSystem
+        >>> from pathlib import Path
+        >>> os = OperatingSystem.WINDOWS
+        >>> dumpfile = Path("tests/data/dump.raw")
+        >>> generic = Generic(os, dumpfile)
+        >>> plugin = generic.get_plugin("Banners")
+        >>> generic.run_plugin(plugin)
 """
 
 from ast import dump

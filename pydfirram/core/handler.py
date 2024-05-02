@@ -1,4 +1,23 @@
-"""todo"""
+"""Provides a file handler class that saves files directly to disk.
+
+This module provides a file handler class that saves files directly to disk.
+It is used by the Volatility3 CLI to save files to disk.
+
+Example:
+    The file handler class can be used as follows:
+
+        $ python3
+        >>> from volatility3.cli import create_file_handler
+        >>> file_handler = create_file_handler("output")
+        >>> file = file_handler("test.txt")
+        >>> file.write(b"Hello, world!")
+        >>> file.close()
+
+Todo:
+    * For now, this module only provides a file handler class
+      that saves files directly to disk. In the future, it could
+      be extended to provide other file handlers as well.
+"""
 
 import io
 import os
@@ -11,6 +30,7 @@ from volatility3.framework import interfaces
 
 def create_file_handler(output_dir: Optional[str]) -> type:
     """Create a file handler class that saves files directly to disk.
+
     Args:
         output_dir (str): The directory where the files should be saved.
                           If None, raises a TypeError.
