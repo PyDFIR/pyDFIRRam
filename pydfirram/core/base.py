@@ -271,6 +271,32 @@ class Generic:
         self.context = None
 
         logger.info(f"Generic OS initialized: {self.os}")
+ 
+
+    def __getattr__(self, key,**kwargs):
+        """
+        Handle attribute access for commands.
+
+        This method is called when an attribute that 
+        matches a command name is accessed. It returns a lambda function 
+        that calls the __run_commands method with the corresponding key.
+
+        :param key: The attribute name (command name).
+        :type key: str
+        :param args: Positional arguments for the method call.
+        :param kwargs: Keyword arguments for the method call.
+        :return: A lambda function that executes the __run_commands method for the given key.
+        """
+        try:
+            plugin: PluginEntry = self.get_plugin(key)
+            print(plugin)
+        except:
+            raise ValueError(f"Unable to handle {key}")
+        def parse_data_function(**kwargs):
+            return self.run_plugin(
+                plugin
+            )
+        return parse_data_function
 
     def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
         """Run a volatility3 plugin with the given arguments.
