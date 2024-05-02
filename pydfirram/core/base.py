@@ -1,4 +1,16 @@
-"""todo"""
+"""Create generic volatility3 OS wrappers.
+
+This module provides a way to interact with Volatility3 plugins in a more
+abstract way. It allows to automatically get all available plugins for a
+specific OS and run them with the required arguments.
+
+Classes:
+    OperatingSystem
+    PluginType
+    PluginEntry
+    Context
+    Generic
+"""
 
 import os
 from dataclasses import dataclass
@@ -17,7 +29,13 @@ from pydfirram.core.handler import create_file_handler
 
 
 class OperatingSystem(Enum):
-    """Supported operating system."""
+    """Supported operating system.
+
+    Attributes:
+        WINDOWS: Windows OS.
+        LINUX: Linux OS.
+        MACOS: MacOS OS.
+    """
 
     WINDOWS = "windows"
     LINUX = "linux"
@@ -25,12 +43,20 @@ class OperatingSystem(Enum):
 
     @staticmethod
     def to_list() -> List[str]:
-        """Returns a list of supported operating systems."""
+        """Returns a list of supported operating systems.
+        Returns:
+            List[str]: List of supported operating systems.
+        """
         return [os.value for os in OperatingSystem]
 
 
 class PluginType(Enum):
-    """Represents a plugin type."""
+    """A volatiliry3 plugin type.
+
+    Attributes:
+        GENERIC: A generic plugin, can be used with any OS.
+        SPECIFIC: An OS-specific plugin.
+    """
 
     GENERIC = 1
     SPECIFIC = 2
@@ -38,18 +64,39 @@ class PluginType(Enum):
 
 @dataclass
 class PluginEntry:
-    """Represents a plugin entry."""
+    """A plugin entry.
+
+    The interface allows to directly interact with the plugin from volatility3 functions.
+
+    Attributes:
+        type: PluginType: The plugin type.
+        name: str: The plugin name.
+        interface: volatility3.framework.interfaces.plugins.PluginInterface: The plugin interface.
+    """
 
     type: PluginType
     name: str
     interface: interfaces.plugins.PluginInterface
 
     def __repr__(self) -> str:
+        """Returns a string representation of the plugin entry."""
         return f"PluginEntry({self.type}, {self.name}, {self.interface})"
 
 
 class Context:
-    """Represents a context for a plugin."""
+    """Context for a volatility3 plugin.
+
+    Attributes:
+        os: OperatingSystem: The operating system.
+        dump_file: Path: The dump file path.
+        context: volatility3.framework.contexts.Context: The volatility3 context.
+        plugin: PluginEntry: The plugin entry.
+
+    Constants:
+        KEY_LAYER_STACKER: str: The layer stacker key.
+        KEY_STACKERS: str: The stackers key.
+        KEY_SINGLE_LOCATION: str: The single location key.
+    """
 
     KEY_LAYER_STACKER = "automagic.LayerStacker"
     KEY_STACKERS = f"{KEY_LAYER_STACKER}.stackers"
@@ -61,7 +108,13 @@ class Context:
         dump_file: Path,
         plugin: PluginEntry,
     ):
-        """Initializes a context."""
+        """Initializes a context.
+
+        Args:
+            operating_system (OperatingSystem): The operating system.
+            dump_file (Path): The dump file path.
+            plugin (PluginEntry): The plugin entry.
+        """
         self.os = operating_system
         self.dump_file = dump_file
         self.context = contexts.Context()
@@ -76,8 +129,14 @@ class Context:
     #     return getattr(self.context, name)
 
     def build(self) -> interfaces.plugins.PluginInterface:
-        """Build the context.
-        todo"""
+        """Build a basic context for the provided plugin.
+
+        Returns:
+            interfaces.plugins.PluginInterface: The built plugin interface.
+
+        Raises:
+            VolatilityExceptions.UnsatisfiedException: If the plugin cannot be built.
+        """
         plugin = self.plugin.interface
         automagics = self.automagics()
         dump_file_location = self.get_dump_file_location()
@@ -105,12 +164,26 @@ class Context:
         return constructed
 
     def add_arguments(self, kwargs: Dict[str, Any]) -> None:
-        """Handle keyword arguments."""
+        """Handle keyword arguments and set them as context config attributes.
+
+        Args:
+            kwargs (Dict[str, Any]): The keyword arguments.
+
+        Raises:
+            AttributeError: If the attribute does not exist.
+        """
         for key, value in kwargs.items():
             setattr(self.context.config, key, value)
 
     def run(self) -> Any:
-        """Run the plugin in the context."""
+        """Run the plugin in the context.
+
+        Returns:
+            Any: The result of the plugin.
+
+        Raises:
+            VolatilityExceptions.UnsatisfiedException: If the plugin cannot be run.
+        """
         try:
             return self.context.run()
         except VolatilityExceptions.UnsatisfiedException as e:
