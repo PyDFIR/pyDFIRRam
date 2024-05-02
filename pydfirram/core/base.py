@@ -24,7 +24,6 @@ Example:
         >>> generic.run_plugin(plugin)
 """
 
-from ast import dump
 import os
 from dataclasses import dataclass
 from enum import Enum
