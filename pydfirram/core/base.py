@@ -85,8 +85,8 @@ class Context:
         os_stackers = automagic.stacker.choose_os_stackers(plugin)
         self.context.config[self.KEY_STACKERS] = os_stackers
 
-        location = "file://" + self.dump_file.as_posix()
-        self.context.config[self.KEY_SINGLE_LOCATION] = location
+        dump_file_location = "file://" + self.dump_file.absolute().as_posix()
+        self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
 
         base_config_path = "plugins"
         file_handler = create_file_handler(os.getcwd())
