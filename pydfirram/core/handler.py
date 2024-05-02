@@ -1,8 +1,10 @@
+"""todo"""
+
 import io
 import os
 import tempfile
 
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Optional
 
 from volatility3.framework import interfaces
 
@@ -10,7 +12,8 @@ from volatility3.framework import interfaces
 def create_file_handler(output_dir: Optional[str]) -> type:
     """Create a file handler class that saves files directly to disk.
     Args:
-        output_dir (str): The directory where the files should be saved. If None, raises a TypeError.
+        output_dir (str): The directory where the files should be saved.
+                          If None, raises a TypeError.
     Returns:
         type: A file handler class that saves files directly to disk.
     """
@@ -22,16 +25,22 @@ def create_file_handler(output_dir: Optional[str]) -> type:
             """Gets the final filename for the saved file."""
             if output_dir is None:
                 raise TypeError("Output directory is not a string")
+
             os.makedirs(output_dir, exist_ok=True)
+            if self.preferred_filename is None:
+                raise TypeError("No preferred filename")
+
             pref_name_array = self.preferred_filename.split(".")
+
             filename, extension = (
                 os.path.join(output_dir, ".".join(pref_name_array[:-1])),
                 pref_name_array[-1],
             )
             output_filename = f"{filename}.{extension}"
-            print(f"{output_filename} and directory = {output_dir}")
+
             if os.path.exists(output_filename):
                 os.remove(output_filename)
+
             return output_filename
 
     class CLIDirectFileHandler(CLIFileHandler):
@@ -41,8 +50,10 @@ def create_file_handler(output_dir: Optional[str]) -> type:
             fd, temp_name = tempfile.mkstemp(
                 suffix=".vol3", prefix="tmp_", dir=output_dir
             )
+
             self._file = io.open(fd, mode="w+b")
             CLIFileHandler.__init__(self, filename)
+
             for attr in dir(self._file):
                 if not attr.startswith("_") and attr not in [
                     "closed",
@@ -51,6 +62,7 @@ def create_file_handler(output_dir: Optional[str]) -> type:
                     "name",
                 ]:
                     setattr(self, attr, getattr(self._file, attr))
+
             self._name = temp_name
 
         def __getattr__(self, item):
@@ -58,19 +70,22 @@ def create_file_handler(output_dir: Optional[str]) -> type:
 
         @property
         def closed(self):
+            """Returns whether the file is closed."""
             return self._file.closed
 
         @property
         def mode(self):
+            """Returns the mode of the file."""
             return self._file.mode
 
         @property
         def name(self):
+            """Returns the name of the file."""
             return self._file.name
 
         def close(self):
             """Closes and commits the file
-            by moving the temporary file to the correct name).
+            by moving the temporary file to the correct name.
             """
             # Don't overcommit
             if self._file.closed:
