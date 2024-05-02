@@ -21,6 +21,8 @@ def test_generic_build():
 
     generic = Generic(os, dumpfile)
 
+    # This plugin is very generic and doesn't
+    # require any additional parameters
     plugin = generic.get_plugin("Banners")
     assert plugin.name == "Banners"
 
