@@ -118,20 +118,20 @@ class Context:
 class Generic:
     """Represents a generic OS to be parsed by volatility."""
 
-    def __init__(self, os: OperatingSystem, dump_file: Path):
+    def __init__(self, operating_system: OperatingSystem, dump_file: Path):
         """Initializes a generic OS, automatically getting all available
         Volatility3 plugins for the OS.
         """
-        self.os = os
+        self.os = operating_system
         self.plugins: List[PluginEntry] = self.get_all_plugins()
         self.dump_file = self.validate_dump_file(dump_file)
-        self.context = Context(os, dump_file)
+        self.context = None
 
         logger.info(f"Generic OS initialized: {self.os}")
 
-    def __getattribute__(self, name: str) -> Any:
-        """Handle attribute acces for plugins."""
-        # todo
+    # def __getattribute__(self, name: str) -> Any:
+    #     """Handle attribute acces for plugins."""
+    #     # todo
 
     def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
         """
@@ -174,15 +174,15 @@ class Generic:
         parsed: List[PluginEntry] = list()
 
         for plugin in plugin_list:
+            interface = plugin_list[plugin]
             elements = plugin.split(".")
             platform = elements[0]
-            path = ".".join(elements[1:-1])
             name = elements[-1]
 
             if platform not in OperatingSystem.to_list():
-                plugin = PluginEntry(PluginType.GENERIC, name, platform)
+                plugin = PluginEntry(PluginType.GENERIC, name, interface)
             elif platform == self.os.value:
-                plugin = PluginEntry(PluginType.SPECIFIC, name, path)
+                plugin = PluginEntry(PluginType.SPECIFIC, name, interface)
             else:
                 continue
 
