@@ -53,4 +53,14 @@ def test_prettytextRenderer():
     Ellipsis
 
 def test_csv_renderer():
-    ellipsis
+    Ellipsis
+
+## Faut que je fasse le test de toutes les fonctions ici.
+# def test_pslist():
+#   s = OperatingSystem.WINDOWS
+#   dumpfile = Path(DUMP_FILE)
+#   generic = Generic(os, dumpfile)
+#   output = generic.PsList()
+#   text_renderer.CSVRenderer().render(output)
+#   assert...
+

@@ -289,7 +289,6 @@ class Generic:
         """
         try:
             plugin: PluginEntry = self.get_plugin(key)
-            print(plugin)
         except:
             raise ValueError(f"Unable to handle {key}")
         def parse_data_function(**kwargs):

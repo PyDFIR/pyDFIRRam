@@ -1,12 +1,17 @@
 """todo"""
 
 import abc
-import json
-
-from typing import Any
+import datetime
+from typing import Any, Tuple, List, Dict
 
 import pandas as pd
 from loguru import logger
+
+from volatility3.framework.renderers import format_hints
+from volatility3.framework import interfaces
+from volatility3.cli import (
+    text_renderer,
+)
 
 
 class Renderer(metaclass=abc.ABCMeta):
@@ -18,10 +23,71 @@ class Renderer(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    @staticmethod
-    def render(data: Any):
+    def render(self, data: Any):
         """Render the data in the specified format."""
+        pass
 
+class JsonRenderer(text_renderer.CLIRenderer):
+    _type_renderers = {
+        format_hints.HexBytes: lambda x: text_renderer.quoted_optional(
+            text_renderer.hex_bytes_as_text
+        )(x),
+        interfaces.renderers.Disassembly: lambda x: text_renderer.quoted_optional(
+            text_renderer.display_disassembly
+        )(x),
+        format_hints.MultiTypeData: lambda x: text_renderer.quoted_optional(
+            text_renderer.multitypedata_as_text
+        )(x),
+        bytes: lambda x: text_renderer.optional(
+            lambda x: " ".join([f"{b:02x}" for b in x])
+        )(x),
+        datetime.datetime: lambda x: x.isoformat()
+        if not isinstance(x, interfaces.renderers.BaseAbsentValue)
+        else None,
+        "default": lambda x: x,
+    }
+
+    name = "JSON"
+    structured_output = True
+
+    def get_render_options(self) -> List[interfaces.renderers.RenderOption]:
+        pass
+
+    def render(self, grid: interfaces.renderers.TreeGrid):
+        final_output: Tuple[
+            Dict[str, List[interfaces.renderers.TreeNode]],
+            List[interfaces.renderers.TreeNode],
+        ] = ({}, [])
+
+        def visitor(
+            node: interfaces.renderers.TreeNode,
+            accumulator: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]],
+        ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+            acc_map, final_tree = accumulator
+            node_dict: Dict[str, Any] = {"__children": []}
+
+            for column_index in range(len(grid.columns)):
+                column = grid.columns[column_index]
+                renderer = self._type_renderers.get(
+                    column.type, self._type_renderers["default"]
+                )
+                data = renderer(list(node.values)[column_index])
+                if isinstance(data, interfaces.renderers.BaseAbsentValue):
+                    data = None
+                node_dict[column.name] = data
+
+            if node.parent:
+                acc_map[node.parent.path]["__children"].append(node_dict)
+            else:
+                final_tree.append(node_dict)
+            acc_map[node.path] = node_dict
+            return acc_map, final_tree
+
+        if not grid.populated:
+            grid.populate(visitor, final_output)
+        else:
+            grid.visit(node=None, function=visitor, initial_accumulator=final_output)
+        return final_output[1]
 
 class DataframeRenderer(Renderer):
     """Class for rendering data in a tabular format.
@@ -29,33 +95,13 @@ class DataframeRenderer(Renderer):
     It is useful for displaying data in a human-readable format.
     This can be multiple types of data, such as a pandas DataFrame, python dict, ...
     """
-
-    @staticmethod
-    def render(data: Any):
+    def render(self, data: Any) -> pd.DataFrame :
         """Render the data in a tabular format."""
         try:
-            formatted = pd.DataFrame(data)
+            formatted = pd.DataFrame(JsonRenderer().render(data))
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e
 
         return formatted
 
-
-class JsonRenderer(Renderer):
-    """Class for rendering data in JSON format.
-
-    It is useful for displaying data in a machine-readable format.
-    This can be multiple types of data, such as a pandas DataFrame, python dict, ...
-    """
-
-    @staticmethod
-    def render(data: Any):
-        """Render the data in JSON format."""
-        try:
-            formatted = json.dumps(data)
-        except Exception as e:
-            logger.error("Data cannot be rendered as JSON.")
-            raise e
-
-        return formatted
