@@ -58,7 +58,6 @@ class JsonRenderer(text_renderer.CLIRenderer):
             Dict[str, List[interfaces.renderers.TreeNode]],
             List[interfaces.renderers.TreeNode],
         ] = ({}, [])
-
         def visitor(
             node: interfaces.renderers.TreeNode,
             accumulator: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]],

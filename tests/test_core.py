@@ -3,7 +3,7 @@ from volatility3.cli import text_renderer
 from pydfirram.core.base import Generic, OperatingSystem
 import pytest
 
-DUMP_FILE = Path("/home/braguette/dataset_memory/ch2.dmp")
+DUMP_FILE = Path("/home/remnux/2600/ch2.dmp")
 
 
 def test_generic():
