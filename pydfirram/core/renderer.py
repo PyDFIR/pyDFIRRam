@@ -1,6 +1,5 @@
 """todo"""
 
-import abc
 import datetime
 from typing import Any, Tuple, List, Dict
 
@@ -14,20 +13,7 @@ from volatility3.cli import (
 )
 
 
-class Renderer(metaclass=abc.ABCMeta):
-    """Abstract class for rendering data in different formats.
-
-    Attributes:
-        output_format: The output format to render the data in.
-        data: The data to render.
-    """
-
-    @abc.abstractmethod
-    def render(self, data: Any):
-        """Render the data in the specified format."""
-        pass
-
-class JsonRenderer(text_renderer.CLIRenderer):
+class TreeGrid_to_json(text_renderer.CLIRenderer):
     _type_renderers = {
         format_hints.HexBytes: lambda x: text_renderer.quoted_optional(
             text_renderer.hex_bytes_as_text
@@ -88,19 +74,33 @@ class JsonRenderer(text_renderer.CLIRenderer):
             grid.visit(node=None, function=visitor, initial_accumulator=final_output)
         return final_output[1]
 
-class DataframeRenderer(Renderer):
+
+class Renderer:
     """Class for rendering data in a tabular format.
 
     It is useful for displaying data in a human-readable format.
     This can be multiple types of data, such as a pandas DataFrame, python dict, ...
     """
-    def render(self, data: Any) -> pd.DataFrame :
+
+    def __init__(self,data) -> None:
+        self.data = data
+
+    def to_json(self) -> dict :
         """Render the data in a tabular format."""
         try:
-            formatted = pd.DataFrame(JsonRenderer().render(data))
+            formatted = TreeGrid_to_json().render(self.data)
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e
 
         return formatted
 
+    def to_dataframe(self, data: Any) -> pd.DataFrame :
+        """Render the data in a tabular format."""
+        try:
+            formatted = pd.DataFrame(TreeGrid_to_json().render(data))
+        except Exception as e:
+            logger.error("Data cannot be rendered as a DataFrame.")
+            raise e
+
+        return formatted

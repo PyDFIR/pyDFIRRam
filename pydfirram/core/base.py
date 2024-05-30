@@ -38,6 +38,7 @@ from volatility3.framework import interfaces
 from volatility3.framework.plugins import construct_plugin
 
 from pydfirram.core.handler import create_file_handler
+from pydfirram.core.renderer import Renderer
 
 
 class OperatingSystem(Enum):
@@ -60,6 +61,7 @@ class OperatingSystem(Enum):
             List[str]: List of supported operating systems.
         """
         return [os.value for os in OperatingSystem]
+
 
 
 class PluginType(Enum):
@@ -269,6 +271,7 @@ class Generic:
         self.plugins: List[PluginEntry] = self.get_all_plugins()
         self.dump_file = dump_file
         self.context = None
+        self.temp_data = None
 
         logger.info(f"Generic OS initialized: {self.os}")
  
@@ -291,10 +294,10 @@ class Generic:
             plugin: PluginEntry = self.get_plugin(key)
         except:
             raise ValueError(f"Unable to handle {key}")
+        
         def parse_data_function(**kwargs):
-            return self.run_plugin(
-                plugin
-            )
+            return Renderer(data=self.run_plugin(plugin=plugin))
+            
         return parse_data_function
 
     def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
