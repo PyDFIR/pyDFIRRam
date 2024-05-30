@@ -39,7 +39,7 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
     def get_render_options(self) -> List[interfaces.renderers.RenderOption]:
         pass
 
-    def render(self, grid: interfaces.renderers.TreeGrid):
+    def render(self, grid: interfaces.renderers.TreeGrid) -> Dict:
         final_output: Tuple[
             Dict[str, List[interfaces.renderers.TreeNode]],
             List[interfaces.renderers.TreeNode],
@@ -85,7 +85,7 @@ class Renderer:
     def __init__(self,data) -> None:
         self.data = data
 
-    def to_json(self) -> dict :
+    def to_json(self) -> Dict :
         """Render the data in a tabular format."""
         try:
             formatted = TreeGrid_to_json().render(self.data)
@@ -104,3 +104,4 @@ class Renderer:
             raise e
 
         return formatted
+    

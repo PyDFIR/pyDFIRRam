@@ -276,7 +276,7 @@ class Generic:
         logger.info(f"Generic OS initialized: {self.os}")
  
 
-    def __getattr__(self, key,**kwargs):
+    def __getattr__(self, key,**kwargs) -> Renderer :
         """
         Handle attribute access for commands.
 
@@ -288,7 +288,7 @@ class Generic:
         :type key: str
         :param args: Positional arguments for the method call.
         :param kwargs: Keyword arguments for the method call.
-        :return: A lambda function that executes the __run_commands method for the given key.
+        :return: A class of Renderer that is the result of a lambda function that executes the __run_commands method for the given key.
         """
         try:
             plugin: PluginEntry = self.get_plugin(key)
