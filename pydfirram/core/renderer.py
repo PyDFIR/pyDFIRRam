@@ -37,9 +37,21 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
     structured_output = True
 
     def get_render_options(self) -> List[interfaces.renderers.RenderOption]:
+        """
+        Get render options.
+        """
         pass
 
     def render(self, grid: interfaces.renderers.TreeGrid) -> Dict:
+        """
+        Render the TreeGrid to JSON format.
+
+        Args:
+            grid (interfaces.renderers.TreeGrid): The TreeGrid to render.
+
+        Returns:
+            Dict: The JSON representation of the TreeGrid.
+        """
         final_output: Tuple[
             Dict[str, List[interfaces.renderers.TreeNode]],
             List[interfaces.renderers.TreeNode],
@@ -48,6 +60,18 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
             node: interfaces.renderers.TreeNode,
             accumulator: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]],
         ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+            
+            """
+            A visitor function to process each node in the TreeGrid.
+
+            Args:
+                node (interfaces.renderers.TreeNode): The current node being visited.
+                accumulator (Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]):
+                    The accumulator containing the accumulated results.
+
+            Returns:
+                Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]: The updated accumulator.
+            """
             acc_map, final_tree = accumulator
             node_dict: Dict[str, Any] = {"__children": []}
 
