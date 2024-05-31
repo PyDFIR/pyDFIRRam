@@ -128,4 +128,3 @@ class Renderer:
             raise e
 
         return formatted
-    

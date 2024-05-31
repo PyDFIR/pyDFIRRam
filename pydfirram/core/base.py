@@ -294,10 +294,11 @@ class Generic:
             plugin: PluginEntry = self.get_plugin(key)
         except:
             raise ValueError(f"Unable to handle {key}")
-        
+
         def parse_data_function(**kwargs):
-            return Renderer(data=self.run_plugin(plugin=plugin))
-            
+            return Renderer(
+                data= self.run_plugin(plugin,**kwargs)
+                )
         return parse_data_function
 
     def run_plugin(self, plugin: PluginEntry, **kwargs: Any) -> Any:
