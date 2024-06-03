@@ -52,8 +52,8 @@ def test_pslist_filter_pid():
     dumpfile = Path(DUMP_FILE)
 
     generic = Generic(os, dumpfile)
-    output = generic.PsList(pid=[2548]).to_json()[0]
-    assert output["PID"] == 2548
+    output = generic.PsList(pid=[4]).to_json()[0]
+    assert output["PID"] == 4
 
 ## Rendering
 def test_prettytextRenderer():
