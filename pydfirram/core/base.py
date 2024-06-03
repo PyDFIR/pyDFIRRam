@@ -178,10 +178,7 @@ class Context:
             AttributeError: If the attribute does not exist.
         """
         for k, v in kwargs.items():
-            try:
-                context.config[k] = v
-            except Exception as exxx:
-                print(exxx)
+            context.config[k] = v
         return context
 
 
