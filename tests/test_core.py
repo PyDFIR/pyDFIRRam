@@ -3,7 +3,7 @@ from volatility3.cli import text_renderer
 from pydfirram.core.base import Generic, OperatingSystem
 import pytest
 
-DUMP_FILE = Path("/home/braguette/dataset_memory/ch2.dmp")
+DUMP_FILE = Path("/home/remnux/2600/ch2.dmp")
 
 
 def test_generic():
@@ -47,6 +47,13 @@ def test_get_unknow_attribute_():
     with pytest.raises(ValueError):
         generic.aaaaa()
 
+def test_pslist_filter_pid():
+    os = OperatingSystem.WINDOWS
+    dumpfile = Path(DUMP_FILE)
+
+    generic = Generic(os, dumpfile)
+    output = generic.PsList(pid=[2548]).to_json()[0]
+    assert output["PID"] == 2548
 
 ## Rendering
 def test_prettytextRenderer():

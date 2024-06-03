@@ -151,7 +151,6 @@ class Context:
 
         self.context.config[self.KEY_STACKERS] = self.os_stackers()
         self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
-
         try:
             # Construct the plugin, clever magic figures out how to
             # fulfill each requirement that might not be fulfilled
@@ -169,7 +168,7 @@ class Context:
 
         return constructed
 
-    def add_arguments(self, kwargs: Dict[str, Any]) -> None:
+    def add_arguments(self,context, kwargs: Dict[str, Any]) -> None:
         """Handle keyword arguments and set them as context config attributes.
 
         Args:
@@ -178,23 +177,13 @@ class Context:
         Raises:
             AttributeError: If the attribute does not exist.
         """
-        for key, value in kwargs.items():
-            setattr(self.context.config, key, value)
+        for k, v in kwargs.items():
+            try:
+                context.config[k] = v
+            except Exception as exxx:
+                print(exxx)
+        return context
 
-    def run(self) -> Any:
-        """Run the plugin in the context.
-
-        Returns:
-            Any: The result of the plugin.
-
-        Raises:
-            VolatilityExceptions.UnsatisfiedException: If the plugin cannot be run.
-        """
-        try:
-            return self.context.run()
-        except VolatilityExceptions.UnsatisfiedException as e:
-            logger.error(f"Failed to run plugin: {e}")
-            raise e
 
     def get_available_automagics(self) -> List[interfaces.automagic.AutomagicInterface]:
         """Returns a list of available volatility3 automagics.
@@ -317,16 +306,14 @@ class Generic:
         # Create basic context
         self.context = Context(self.os, self.dump_file, plugin)
 
-        # Extend it with kwargs
-        self.context.add_arguments(kwargs)
-
         # Build the context
         context = self.context.build()
-
+        # Extend it with kwargs
+        if kwargs:
+            context = self.context.add_arguments(context,kwargs)
         # Run the plugin
         if self.context is None:
             raise ValueError("Context not built.")
-
         return context.run()
 
     def validate_dump_file(self, dump_file: Path) -> bool:
