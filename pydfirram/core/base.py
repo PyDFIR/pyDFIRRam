@@ -168,7 +168,7 @@ class Context:
 
         return constructed
 
-    def add_arguments(self,context, kwargs: Dict[str, Any]) -> None:
+    def add_arguments(self,context: contexts.Context(), kwargs: Dict[str, Any]) -> contexts.Context():
         """Handle keyword arguments and set them as context config attributes.
 
         Args:
