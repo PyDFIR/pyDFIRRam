@@ -47,27 +47,23 @@ def test_get_unknow_attribute_():
     with pytest.raises(ValueError):
         generic.aaaaa()
 
+import json
 def test_pslist_filter_pid():
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
 
     generic = Generic(os, dumpfile)
-    output = generic.PsList(pid=[4]).to_json()[0]
+    output = generic.PsList(pid=[4]).to_dict()
     assert output["PID"] == 4
 
-## Rendering
-def test_prettytextRenderer():
-    Ellipsis
-
-def test_csv_renderer():
-    Ellipsis
-
-## Faut que je fasse le test de toutes les fonctions ici.
-# def test_pslist():
-#   s = OperatingSystem.WINDOWS
-#   dumpfile = Path(DUMP_FILE)
-#   generic = Generic(os, dumpfile)
-#   output = generic.PsList()
-#   text_renderer.CSVRenderer().render(output)
-#   assert...
+def test_rendering_to_json():
+    os = OperatingSystem.WINDOWS
+    dumpfile = Path(DUMP_FILE)
+    generic = Generic(os, dumpfile)
+    output = generic.PsList(pid=[4]).to_json()
+    try:
+        json.loads(output)
+    except ValueError:
+        pytest.fail("Not a Json")
+   
 

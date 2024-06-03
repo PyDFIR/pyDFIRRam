@@ -1,6 +1,7 @@
 """todo"""
 
 import datetime
+from json import JSONEncoder,dumps,loads
 from typing import Any, Tuple, List, Dict
 
 import pandas as pd
@@ -96,7 +97,8 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
             grid.populate(visitor, final_output)
         else:
             grid.visit(node=None, function=visitor, initial_accumulator=final_output)
-        return final_output[1]
+        request_data_output = final_output[1]
+        return request_data_output[0]
 
 
 class Renderer:
@@ -109,15 +111,16 @@ class Renderer:
     def __init__(self,data) -> None:
         self.data = data
 
-    def to_json(self) -> Dict :
+    def to_dict(self) -> Dict :
         """Render the data in a tabular format."""
         try:
             formatted = TreeGrid_to_json().render(self.data)
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e
-
         return formatted
+    def to_json(self) -> Any:
+        return dumps(self.to_dict())
 
     def to_dataframe(self, data: Any) -> pd.DataFrame :
         """Render the data in a tabular format."""
