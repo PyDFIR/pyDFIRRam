@@ -262,7 +262,7 @@ class Generic:
         logger.info(f"Generic OS initialized: {self.os}")
  
 
-    def __getattr__(self, key,**kwargs) -> Renderer :
+    def __getattr__(self, key: str,**kwargs: Dict) -> Renderer :
         """
         Handle attribute access for commands.
 
@@ -276,6 +276,7 @@ class Generic:
         :param kwargs: Keyword arguments for the method call.
         :return: A class of Renderer that is the result of a lambda function that executes the __run_commands method for the given key.
         """
+        key = key.lower()
         try:
             plugin: PluginEntry = self.get_plugin(key)
         except:
@@ -341,6 +342,7 @@ class Generic:
         Raises:
             ValueError: If the plugin is not found.
         """
+        name = name.lower()
         for plugin in self.plugins:
             if plugin.name == name:
                 return plugin
@@ -357,12 +359,12 @@ class Generic:
         Raises:
             ValueError: If the plugin is not found.
         """
-        plugin_list = self.get_plugins_list()
-        parsed_plugins = self.parse_plugins_list(plugin_list)
+        plugin_list = self._get_plugins_list()
+        parsed_plugins = self._parse_plugins_list(plugin_list)
 
         return parsed_plugins
 
-    def get_plugins_list(self) -> Dict[str, Any]:
+    def _get_plugins_list(self) -> Dict[str, Any]:
         """Get a list of available volatility3 plugins for the OS.
 
         Returns:
@@ -376,7 +378,7 @@ class Generic:
 
         return plugin_list
 
-    def parse_plugins_list(self, plugin_list: Dict[str, Any]) -> List[PluginEntry]:
+    def _parse_plugins_list(self, plugin_list: Dict[str, Any]) -> List[PluginEntry]:
         """Parse the list of available volatility3 plugins.
 
         The plugin list is a dictionary where the key is the plugin name
@@ -395,7 +397,7 @@ class Generic:
             elements = plugin.split(".")
             platform = elements[0]
             name = elements[-1]
-
+            name = name.lower()
             if platform not in OperatingSystem.to_list():
                 type_ = PluginType.GENERIC
             elif platform == self.os.value:
