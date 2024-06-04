@@ -177,8 +177,9 @@ class Context:
         Raises:
             AttributeError: If the attribute does not exist.
         """
-        for k, v in kwargs.items():
-            context.config[k] = v
+        for argument, value in kwargs.items():
+            logger.info(f"Add arguments{argument} with value {value} ")
+            context.config[argument] = value
         return context
 
 
@@ -260,7 +261,7 @@ class Generic:
         self.temp_data = None
 
         logger.info(f"Generic OS initialized: {self.os}")
- 
+
 
     def __getattr__(self, key: str,**kwargs: Dict) -> Renderer :
         """
@@ -274,13 +275,15 @@ class Generic:
         :type key: str
         :param args: Positional arguments for the method call.
         :param kwargs: Keyword arguments for the method call.
-        :return: A class of Renderer that is the result of a lambda function that executes the __run_commands method for the given key.
+        :return: A class of Renderer that is the result of a lambda function that executes 
+            the __run_commands method for the given key.
         """
         key = key.lower()
+        logger.info(f"Running the function {key}")
         try:
             plugin: PluginEntry = self.get_plugin(key)
-        except:
-            raise ValueError(f"Unable to handle {key}")
+        except Exception as exc:
+            raise ValueError(f"Unable to handle {key}") from exc
 
         def parse_data_function(**kwargs):
             return Renderer(
@@ -303,13 +306,13 @@ class Generic:
         """
         # Create basic context
         self.context = Context(self.os, self.dump_file, plugin)
-
+        logger.info(f"Running {plugin} on {self.dump_file} for {self.os}")
         # Build the context
         context = self.context.build()
         # Extend it with kwargs
         if kwargs:
             context = self.context.add_arguments(context,kwargs)
-        # Run the plugin
+
         if self.context is None:
             raise ValueError("Context not built.")
         return context.run()
@@ -370,6 +373,7 @@ class Generic:
         Returns:
             Dict[str, Any]: A dictionary of plugins.
         """
+        logger.info("Trying to import plugins")
         failures = framework.import_files(plugins, True)
         if failures:
             logger.warning(f"Failed to import some plugins: {failures}")

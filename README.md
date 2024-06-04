@@ -15,15 +15,14 @@ todo: traduire en anglais
 5. Pouvoir gerer plusieurs dump dans un meme programme
 
 ## Installation
+PyDFIRRam is build with poetry, so you need to install it.
 
 You can install pyDFIRRam with the following commands :
 
 ```bash
-$ python3 -m venv venv
-$ source venv/bin/activate
 $ git clone https://github.com/pyDFIR/pyDFIRRam
 $ cd pyDFIRRam
-$ poetry build
+$ poetry shell
 $ poetry install
 ```
 
@@ -33,8 +32,10 @@ todo: écrire
 
 You can use the library in multiple ways with :
 - a Jupyter notebook
-- a configuration file (CLI-like)
 - a script
+
+
+### Jupyter Notebook
 
 Kickstart the project by running :
 
@@ -42,21 +43,30 @@ Kickstart the project by running :
 $ poetry run jupyter notebook
 ```
 
+```Jupyter
+from pathlib import Path
+from pydfirram.core.base import Generic, OperatingSystem
+
+DUMP_FILE = Path("THE DIRECTORY")
+os = OperatingSystem.WINDOWS
+dumpfile = Path(DUMP_FILE)
+generic = Generic(os, dumpfile)
+output = generic.PsList(pid=4).to_dataframe()
+print(output)
+```
+
 # Examples
 
 ```python
-from pyDFIRRam import windows
-import os
+from pathlib import Path
+from pydfirram.core.base import Generic, OperatingSystem
 
-# Check the documentation for the following parameters, those are important
-winObj1 = windows(InvestFile=os.getcwd() + "memdump.mem", Outputformat="dataframe")
-
-data1   = winObj1.PsList()
-data1_1 = winObj1.PsList(pid=[4])
-data1_1 = winObj1.PsList(pid=[4, 324, ...])
-
-data1
-data1_1
+DUMP_FILE = Path("THE DIRECTORY")
+os = OperatingSystem.WINDOWS
+dumpfile = Path(DUMP_FILE)
+generic = Generic(os, dumpfile)
+output = generic.PsList(pid=4).to_dict()
+print(output)
 ```
 
 All supported features are documented, check it out on [our documentation](todo) !

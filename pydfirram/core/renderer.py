@@ -98,12 +98,7 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
         else:
             grid.visit(node=None, function=visitor, initial_accumulator=final_output)
         
-        if not final_output[1]:
-            logger.error("Data cannot be found")
-            return ValueError
-        else:
-            request_data_output = final_output[1]
-            return request_data_output[0]
+        return final_output[1]
 
 
 class Renderer:
@@ -130,10 +125,10 @@ class Renderer:
     def to_json(self) -> Any:
         return dumps(self.to_dict())
 
-    def to_dataframe(self, data: Any) -> pd.DataFrame :
+    def to_df(self) -> pd.DataFrame :
         """Render the data in a tabular format."""
         try:
-            formatted = pd.DataFrame(TreeGrid_to_json().render(data))
+            formatted = pd.DataFrame(TreeGrid_to_json().render(self.data))
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e
