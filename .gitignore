@@ -58,6 +58,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+.ipynb
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
@@ -111,3 +112,7 @@ cython_debug/
 
 # VSCode
 .vscode/
+
+
+# Local Dev
+main.py
