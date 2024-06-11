@@ -72,18 +72,3 @@ def test_lowercase_function_call():
     generic = Generic(os, dumpfile)
     output = generic.pslist(pid=[4]).to_list()[0]
     assert output["PID"] == 4
-
-#Celui ci fonctionne en theorie, il faut juste import l'ISF et le dump
-# Perso j'ai DL celui de la CI de Volatility et pas de problems
-#def test_bad_operating_system_referenced():
-#    os = OperatingSystem.LINUX
-#    dumpfile = Path(DUMP_FILE)
-#    generic = Generic(os, dumpfile)
-#    output = generic.pslist().to_list()
-#    assert  output == []
-
-# A faire plus tard, checker quelques strings pour valider que c'est bien l'os Selectionné
-#def test_bad_path_referenced():
-#    os = OperatingSystem.LINUX
-#    dumpfile = Path("/home/remnx/ch2.dmp")
-#    generic = Generic(os, dumpfile)
