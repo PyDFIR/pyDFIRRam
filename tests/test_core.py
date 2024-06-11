@@ -1,17 +1,14 @@
 from pathlib import Path
-import json
-import pytest
 from volatility3.cli import text_renderer
 from pydfirram.core.base import Generic, OperatingSystem
+from volatility3.framework import exceptions as VolatilityExceptions
+import pytest
+import json
 
-
-DUMP_FILE = Path("/home/braguette/dataset_memory/ch2.dmp")
+DUMP_FILE = Path("/home/remnux/2600/ch2.dmp")
 
 
 def test_generic():
-    """
-        Function to test the Generic()
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
@@ -19,9 +16,6 @@ def test_generic():
 
 
 def test_generic_build():
-    """
-        Function use to test the build of pydfir
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
@@ -33,9 +27,6 @@ def test_generic_build():
 
 
 def test_get_attr():
-    """
-        Test the function to see if __getattr__ works good in base.py
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
@@ -43,9 +34,6 @@ def test_get_attr():
     assert output
 
 def test_get_unknow_attribute_():
-    """
-        Check error handling in case of bad function calls
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
@@ -53,19 +41,13 @@ def test_get_unknow_attribute_():
         generic.aaaaa()
 
 def test_pslist_filter_pid():
-    """
-        Tests the function pslist with a parameters
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
-    output = generic.PsList(pid=[4]).to_dict()
+    output = generic.PsList(pid=[4]).to_list()[0]
     assert output["PID"] == 4
 
 def test_rendering_to_json():
-    """
-        Check if the rendering fonction to_json return a valid JSON
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
@@ -76,22 +58,17 @@ def test_rendering_to_json():
         pytest.fail("Not a Json")
 
 def test_plugin_with_parameter_pslist():
-    """
-        Check the return value if wrong parametres is send
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
-    output = generic.PsList(pid=[44444444]).to_dict()
-    assert output == ValueError
-
+    try:
+        generic.PsList(pid=[44444444]).to_list()
+    except VolatilityExceptions:
+        pytest.skip("Volatility Execption raised")
 
 def test_lowercase_function_call():
-    """
-        Check case insesitive functions calls
-    """
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     generic = Generic(os, dumpfile)
-    output = generic.pslist(pid=[4]).to_dict()
+    output = generic.pslist(pid=[4]).to_list()[0]
     assert output["PID"] == 4

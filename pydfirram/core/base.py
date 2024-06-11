@@ -22,6 +22,16 @@ Example:
         >>> generic = Generic(os, dumpfile)
         >>> plugin = generic.get_plugin("Banners")
         >>> generic.run_plugin(plugin)
+
+    OR :
+        $ python3
+        >>> from pydfirram.core.base import Generic, OperatingSystem
+        >>> from pathlib import Path
+        >>> os = OperatingSystem.WINDOWS
+        >>> dumpfile = Path("tests/data/dump.raw")
+        >>> generic = Generic(dumpfile)
+        >>> plugin = generic.pslist().to_dict()
+        >>> print(plugin)
 """
 
 import os
@@ -31,8 +41,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from loguru import logger
-from volatility3 import framework, plugins
-from volatility3.framework import automagic, contexts
+from volatility3 import framework, plugins,symbols
+from volatility3.framework import automagic, contexts, constants
 from volatility3.framework import exceptions as VolatilityExceptions
 from volatility3.framework import interfaces
 from volatility3.framework.plugins import construct_plugin
@@ -148,7 +158,6 @@ class Context:
         dump_file_location = self.get_dump_file_location()
         base_config_path = "plugins"
         file_handler = create_file_handler(os.getcwd())
-
         self.context.config[self.KEY_STACKERS] = self.os_stackers()
         self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
         try:
@@ -177,9 +186,8 @@ class Context:
         Raises:
             AttributeError: If the attribute does not exist.
         """
-        for argument, value in kwargs.items():
-            logger.info(f"Add arguments{argument} with value {value} ")
-            context.config[argument] = value
+        for k, v in kwargs.items():
+            context.config[k] = v
         return context
 
 
@@ -261,7 +269,7 @@ class Generic:
         self.temp_data = None
 
         logger.info(f"Generic OS initialized: {self.os}")
-
+ 
 
     def __getattr__(self, key: str,**kwargs: Dict) -> Renderer :
         """
@@ -275,16 +283,13 @@ class Generic:
         :type key: str
         :param args: Positional arguments for the method call.
         :param kwargs: Keyword arguments for the method call.
-        :return: A class of Renderer that is the result of a lambda function that executes 
-            the __run_commands method for the given key.
+        :return: A class of Renderer that is the result of a lambda function that executes the __run_commands method for the given key.
         """
         key = key.lower()
-        logger.info(f"Running the function {key}")
         try:
             plugin: PluginEntry = self.get_plugin(key)
-        except Exception as exc:
-            raise ValueError(f"Unable to handle {key}") from exc
-
+        except:
+            raise ValueError(f"Unable to handle {key}")
         def parse_data_function(**kwargs):
             return Renderer(
                 data= self.run_plugin(plugin,**kwargs)
@@ -306,13 +311,13 @@ class Generic:
         """
         # Create basic context
         self.context = Context(self.os, self.dump_file, plugin)
-        logger.info(f"Running {plugin} on {self.dump_file} for {self.os}")
         # Build the context
         context = self.context.build()
+        
         # Extend it with kwargs
         if kwargs:
             context = self.context.add_arguments(context,kwargs)
-
+        # Run the plugin
         if self.context is None:
             raise ValueError("Context not built.")
         return context.run()
@@ -373,7 +378,6 @@ class Generic:
         Returns:
             Dict[str, Any]: A dictionary of plugins.
         """
-        logger.info("Trying to import plugins")
         failures = framework.import_files(plugins, True)
         if failures:
             logger.warning(f"Failed to import some plugins: {failures}")

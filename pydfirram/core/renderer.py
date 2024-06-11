@@ -97,7 +97,6 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
             grid.populate(visitor, final_output)
         else:
             grid.visit(node=None, function=visitor, initial_accumulator=final_output)
-        
         return final_output[1]
 
 
@@ -111,24 +110,22 @@ class Renderer:
     def __init__(self,data) -> None:
         self.data = data
 
-    def to_dict(self) -> Dict :
+    def to_list(self) -> Dict :
         """Render the data in a tabular format."""
         try:
             formatted = TreeGrid_to_json().render(self.data)
-            if formatted == ValueError:
-                logger.error("No data can be parsed by the functions")
         except Exception as e:
             logger.error("Data cannot be rendered as a Dict.")
             raise e
         return formatted
 
     def to_json(self) -> Any:
-        return dumps(self.to_dict())
+        return dumps(self.to_list())
 
-    def to_df(self) -> pd.DataFrame :
+    def to_dataframe(self, data: Any) -> pd.DataFrame :
         """Render the data in a tabular format."""
         try:
-            formatted = pd.DataFrame(TreeGrid_to_json().render(self.data))
+            formatted = pd.DataFrame(TreeGrid_to_json().render(data))
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e
