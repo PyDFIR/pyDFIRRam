@@ -6,16 +6,9 @@ from pydfirram.core.base import Generic, OperatingSystem
 
 DUMP_FILE = Path("/home/remnux/2600/ch2.dmp")
 
-def test_rendering_to_json():
-    os = OperatingSystem.WINDOWS
-    dumpfile = Path(DUMP_FILE)
-    generic = Generic(os, dumpfile)
-    output = generic.PsList(pid=[4]).to_json()
-    try:
-        json.loads(output)
-    except ValueError:
-        pytest.fail("Not a Json")
-
+def test_rendering_to_json(generic_instance):
+    output = generic_instance.PsList(pid=[4]).to_json()
+    assert json.loads(output), "La sortie n'est pas un JSON valide."
 
 def test_to_dataframe():
     os = OperatingSystem.WINDOWS
