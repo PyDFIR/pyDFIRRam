@@ -110,23 +110,29 @@ class Renderer:
     def __init__(self,data) -> None:
         self.data = data
 
-    def to_list(self) -> Dict :
-        """Render the data in a tabular format."""
+    def to_list(self) -> Dict:
+        """Convert the data to a list format."""
         try:
             formatted = TreeGrid_to_json().render(self.data)
         except Exception as e:
-            logger.error("Data cannot be rendered as a Dict.")
+            logger.error("Impossible de rendre les données sous forme de dictionnaire.")
             raise e
         return formatted
 
-    def to_json(self) -> Any:
-        return dumps(self.to_list())
-
-    def to_dataframe(self, data: Any) -> pd.DataFrame :
-        """Render the data in a tabular format."""
+    def to_json(self) -> str:
+        """Convert the data to JSON."""
         try:
-            formatted = pd.DataFrame(TreeGrid_to_json().render(data))
+            data_as_dict = self.to_list()
+            return dumps(data_as_dict)
         except Exception as e:
-            logger.error("Data cannot be rendered as a DataFrame.")
+            logger.error("Impossible de convertir les données en JSON.")
             raise e
-        return formatted
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert the data to a DataFrame."""
+        try:
+            data_as_dict = self.to_list()
+            return pd.DataFrame(data_as_dict)
+        except Exception as e:
+            logger.error("Impossible de rendre les données sous forme de DataFrame.")
+            raise e
