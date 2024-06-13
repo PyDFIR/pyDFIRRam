@@ -267,6 +267,7 @@ class Generic:
         self.dump_file = dump_file
         self.context = None
         self.temp_data = None
+        self.tmp_plugin: PluginEntry = None
 
         logger.info(f"Generic OS initialized: {self.os}")
  
