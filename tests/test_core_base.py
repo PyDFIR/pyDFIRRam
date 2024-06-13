@@ -43,4 +43,4 @@ def test_easy_import_pydfir(windows_instance):
     try:
         windows_instance.pslist()
     except Exception as e:
-        pytest.fail(f"Échec de l'importation de Windows à partir de pydfir: {str(e)}")
+        pytest.fail(f"Windows import from pydfir fails:: {str(e)}")

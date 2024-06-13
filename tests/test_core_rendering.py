@@ -21,7 +21,7 @@ def generic_instance() -> Renderer :
 def test_rendering_to_json(generic_instance):
     output = generic_instance.PsList()
     res = output.to_json()
-    assert loads(res), "La sortie n'est pas un JSON valide."
+    assert loads(res), "The output is not a valid JSON."
 
 def test_to_dataframe():
     os = OperatingSystem.WINDOWS
