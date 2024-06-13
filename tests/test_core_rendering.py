@@ -1,4 +1,4 @@
-import json
+from json import loads
 import pytest
 import pandas as pd
 from pathlib import Path
@@ -21,7 +21,7 @@ def generic_instance() -> Renderer :
 def test_rendering_to_json(generic_instance):
     output = generic_instance.PsList()
     res = output.to_json()
-    assert json.loads(res), "La sortie n'est pas un JSON valide."
+    assert loads(res), "La sortie n'est pas un JSON valide."
 
 def test_to_dataframe():
     os = OperatingSystem.WINDOWS
