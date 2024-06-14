@@ -160,7 +160,7 @@ class Renderer:
             logger.error("Unable to convert data to JSON.")
             raise e
 
-    def to_df(self) -> pd.DataFrame:
+    def to_df(self,max_row: bool = False) -> pd.DataFrame:
         """
         Convert the data to a pandas DataFrame.
 
@@ -175,6 +175,9 @@ class Renderer:
         """
         try:
             data_as_dict = self.to_list()
+            if max_row:
+                pd.set_option('display.max_rows', None)
+                pd.set_option('display.max_columns', None)
             return pd.DataFrame(data_as_dict)
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
