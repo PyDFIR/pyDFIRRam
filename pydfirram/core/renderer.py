@@ -160,7 +160,7 @@ class Renderer:
             logger.error("Unable to convert data to JSON.")
             raise e
 
-    def to_dataframe(self) -> pd.DataFrame:
+    def to_df(self) -> pd.DataFrame:
         """
         Convert the data to a pandas DataFrame.
 
