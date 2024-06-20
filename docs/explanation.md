@@ -1,17 +1,3 @@
-<!-- This part of the project documentation focuses on an
-**understanding-oriented** approach. You'll get a
-chance to read about the background of the project,
-as well as reasoning about how it was implemented.
+The primary goal of this project is to develop a simple API for Volatility that facilitates orchestration and scripting. This approach allows users to focus on the data itself rather than solely on the output. By improving the representation of data beyond the command line interface (CLI), the project opens up new possibilities for data interpretation and analysis.
 
-> **Note:** Expand this section by considering the
-> following points:
-
-- Give context and background on your library
-- Explain why you created it
-- Provide multiple examples and approaches of how
-    to work with it
-- Help the reader make connections
-- Avoid writing instructions or technical descriptions
-    here -->
-
-todo
+Through this API, users can engage with the data in more intuitive and insightful ways, enabling a deeper understanding and more thorough examination of the information. This shift from traditional CLI outputs to a more versatile and user-friendly interface is designed to enhance the overall experience and effectiveness of memory analysis tasks.

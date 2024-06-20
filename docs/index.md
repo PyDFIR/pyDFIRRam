@@ -1,5 +1,5 @@
 This site contains the project documentation for the
-`pyDFIRRam` project, todo
+`pyDFIRRam` project, an API to use [Volatility](https://github.com/volatilityfoundation/volatility3)
 
 ## Table of contents
 
