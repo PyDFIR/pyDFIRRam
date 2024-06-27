@@ -3,8 +3,7 @@ from pathlib import Path
 from pydfirram.core.base import Generic, OperatingSystem
 from pydfirram.core.renderer import Renderer
 from loguru import logger
-
-DUMP_FILE = Path("/home/remnux/2600/ch2.dmp") # Assurez-vous de remplacer "votre_fichier_de_dump.dump" par le chemin réel vers votre fichier de dump
+from .config import DUMP_FILE
 
 logger.opt(colors=True).info("<b><magenta> TEST PYDFIRRAM WINDOWS FUNCTIONS </magenta></b>")
 

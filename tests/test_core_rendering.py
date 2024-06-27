@@ -5,8 +5,7 @@ from pathlib import Path
 from pydfirram.modules.windows import Windows
 from pydfirram.core.renderer import Renderer
 from loguru import logger
-
-DUMP_FILE = Path("/home/remnux/2600/ch2.dmp")
+from .config import DUMP_FILE
 
 logger.opt(colors=True).info("<b><magenta> TEST PYDFIRRAM CORE RENDERING </magenta></b>")
 
