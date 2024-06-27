@@ -270,7 +270,6 @@ class Generic:
         self.tmp_plugin: PluginEntry = None
 
         logger.info(f"Generic OS initialized: {self.os}")
- 
 
     def __getattr__(self, key: str,**kwargs: Dict) -> Renderer :
         """
@@ -284,13 +283,14 @@ class Generic:
         :type key: str
         :param args: Positional arguments for the method call.
         :param kwargs: Keyword arguments for the method call.
-        :return: A class of Renderer that is the result of a lambda function that executes the __run_commands method for the given key.
+        :return: A class of Renderer that is the result of a lambda
+        function that executes the __run_commands method for the given key.
         """
         key = key.lower()
         try:
             plugin: PluginEntry = self.get_plugin(key)
-        except:
-            raise ValueError(f"Unable to handle {key}")
+        except Exception as exc:
+            raise ValueError(f"Unable to handle {key}") from exc
         def parse_data_function(**kwargs):
             return Renderer(
                 data= self.run_plugin(plugin,**kwargs)
