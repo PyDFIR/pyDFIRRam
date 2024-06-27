@@ -41,8 +41,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from loguru import logger
-from volatility3 import framework, plugins,symbols
-from volatility3.framework import automagic, contexts, constants
+from volatility3 import framework, plugins # type: ignore
+from volatility3.framework import automagic, contexts # type: ignore
 from volatility3.framework import exceptions as VolatilityExceptions
 from volatility3.framework import interfaces
 from volatility3.framework.plugins import construct_plugin
@@ -310,15 +310,11 @@ class Generic:
         Raises:
             ValueError: If the context is not built.
         """
-        # Create basic context
-        self.context = Context(self.os, self.dump_file, plugin)
-        # Build the context
-        context = self.context.build()
+        self.context = Context(self.os, self.dump_file, plugin) # type: ignore
+        context = self.context.build() # type: ignore
         
-        # Extend it with kwargs
         if kwargs:
             context = self.context.add_arguments(context,kwargs)
-        # Run the plugin
         if self.context is None:
             raise ValueError("Context not built.")
         return context.run()
