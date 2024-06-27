@@ -1,7 +1,5 @@
 ## Organisation
 
-todo
-
 ## Quick installation
 
 ### Prerequisites 
@@ -24,16 +22,4 @@ pip install pydfirram
 ```
 ## Usage
 
-### ...
-
-### ...
-
-### CLI
-
-...
-
-Help :
-
-```shell
 todo
-```
