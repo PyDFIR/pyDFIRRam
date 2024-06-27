@@ -13,7 +13,6 @@ def generic_instance() -> Generic:
     """
         Create A generic fixture for test
     """
-
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     return Generic(os, dumpfile)
@@ -41,7 +40,6 @@ def test_volatilty_pslist_with_args_pid(generic_instance : Generic) -> None :
     logger.success("TEST PASSED !")
 
 def test_volatility_banners(generic_instance : Generic) -> None :
-
     logger.opt(colors=True).info("<b><cyan>banners</cyan></b> from volatility is running")
     output : Renderer = generic_instance.banners(pid=[4])
     assert isinstance(output, Renderer), "Error during function execution"
@@ -57,7 +55,6 @@ def test_volatility_cmdline(generic_instance : Generic) -> None :
     assert len(cmdline_content) > 0
 
 def test_volatility_dlllist(generic_instance : Generic) -> None :
-
     logger.opt(colors=True).info("<b><cyan>dlllist</cyan></b> from volatility is running")
     output : Renderer = generic_instance.dlllist()
     assert isinstance(output, Renderer), "Error during function execution"
@@ -67,7 +64,6 @@ def test_volatility_dlllist(generic_instance : Generic) -> None :
     logger.success("TEST PASSED !")
 
 def test_bigpools(generic_instance : Generic) -> None :
-
     logger.opt(colors=True).info("<b><cyan>bigpools</cyan></b> from volatility is running")
     output : Renderer = generic_instance.bigpools()
     assert isinstance(output, Renderer), "Error during function execution"

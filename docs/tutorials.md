@@ -1,6 +1,5 @@
 ## Organisation
 
-
 ## Quick installation
 
 ### Prerequisites 
@@ -21,4 +20,3 @@ poetry install
 ```shell
 pip install pydfirram
 ```
-## Usage

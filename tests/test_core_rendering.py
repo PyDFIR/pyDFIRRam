@@ -28,4 +28,3 @@ def test_to_dataframe(generic_instance):
 def test_to_list(generic_instance):
     output = generic_instance.pslist().to_list()
     assert isinstance(output,list) 
-
