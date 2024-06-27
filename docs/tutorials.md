@@ -1,6 +1,5 @@
 ## Organisation
 
-todo
 
 ## Quick installation
 
@@ -23,17 +22,3 @@ poetry install
 pip install pydfirram
 ```
 ## Usage
-
-### ...
-
-### ...
-
-### CLI
-
-...
-
-Help :
-
-```shell
-todo
-```
