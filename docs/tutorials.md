@@ -20,6 +20,3 @@ poetry install
 ```shell
 pip install pydfirram
 ```
-## Usage
-
-todo
