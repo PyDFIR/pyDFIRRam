@@ -1,0 +1,3 @@
+The primary goal of this project is to develop a simple API for Volatility that facilitates orchestration and scripting. This approach allows users to focus on the data itself rather than solely on the output. By improving the representation of data beyond the command line interface (CLI), the project opens up new possibilities for data interpretation and analysis.
+
+Through this API, users can engage with the data in more intuitive and insightful ways, enabling a deeper understanding and more thorough examination of the information. This shift from traditional CLI outputs to a more versatile and user-friendly interface is designed to enhance the overall experience and effectiveness of memory analysis tasks.
