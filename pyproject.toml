@@ -23,6 +23,31 @@ regex = "^2024.4.28"
 graphviz = "^0.20.3"
 loguru = "^0.7.2"
 jupyter = "^1.0.0"
+mike = "^2.1.2"
+
+[tool.poetry.extras]
+test = [
+    "pytest",
+    "black",
+    "isort",
+    "flake8",
+    "flake8-docstrings",
+    "pytest-cov"
+    ]
+
+dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml"]
+
+doc = [
+    "mkdocs",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocs-material-extension",
+    "mkdocs-autorefs",
+    "mike",
+    "setuptools"
+    ]
+
 
 [tool.poetry.extras]
 test = [
