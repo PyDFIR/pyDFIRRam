@@ -6,6 +6,13 @@ authors = [
     "Braguette <alexis.debrito@ecole2600.com>",
     "std3 <67806187+standard3@users.noreply.github.com>",
 ]
+classifiers=[
+    'Development Status :: 2 - Pre-Alpha',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: MIT License',
+    'Natural Language :: English',
+    'Programming Language :: Python :: 3.10',
+]
 license = "AGPL-3.0"
 
 [tool.poetry.dependencies]
@@ -16,6 +23,30 @@ regex = "^2024.4.28"
 graphviz = "^0.20.3"
 loguru = "^0.7.2"
 jupyter = "^1.0.0"
+
+[tool.poetry.extras]
+test = [
+    "pytest",
+    "black",
+    "isort",
+    "flake8",
+    "flake8-docstrings",
+    "pytest-cov"
+    ]
+
+dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml"]
+
+doc = [
+    "mkdocs",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocs-material-extension",
+    "mkdocs-autorefs",
+    "mike",
+    "setuptools"
+    ]
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
