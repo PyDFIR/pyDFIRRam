@@ -2,7 +2,7 @@ site_name: PyDFIRRam
 site_url: https://PyDFIR.github.io/PyDFIRRam
 site_description: Documentation for PyDFIRRam
 
-repo_name: PyDFIR/PyDFIRRam
+repo_name: PyDFIRRam
 repo_url: https://github.com/PyDFIR/PyDFIRRam
 
 edit_uri: edit/main/docs/
