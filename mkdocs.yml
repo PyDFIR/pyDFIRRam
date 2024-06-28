@@ -44,3 +44,13 @@ nav:
   - Reference:
       - Index: reference/reference.md
   - explanation.md
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/PyDFIR/pyDFIRRam
+      name: Github
+    - icon: material/email
+      link: "mailto:alexis.debrito@ecole2600.com"
