@@ -6,7 +6,7 @@ name: build & release
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branch: [main, master]
+    branch: main
     tags:
       - 'v*'
 
@@ -21,6 +21,10 @@ jobs:
     strategy:
       matrix:
         python-versions: ['3.10']
+
+    # authorize job to read secrets
+    permissions:
+      id-token: write
 
     # map step outputs to job outputs so they can be share among jobs
     outputs:
