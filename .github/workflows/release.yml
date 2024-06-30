@@ -26,6 +26,9 @@ jobs:
     # authorize job to read secrets
     permissions:
       id-token: write
+      contents: write
+      pull-requests: write
+      repository-projects: write
 
     # map step outputs to job outputs so they can be share among jobs
     outputs:
