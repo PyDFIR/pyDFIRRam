@@ -56,17 +56,13 @@ jobs:
           poetry lock
           poetry build
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          body: ${{ steps.build_changelog.outputs.changelog }}
-          draft: false
-          prerelease: false
+          body_path: ${{ steps.build_changelog.outputs.changelog }}
+          repository: PyDFIR/pyDFIRRam
+          #token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
 
       - name: Publish to PYPI
         uses: pypa/gh-action-pypi-publish@release/v1
