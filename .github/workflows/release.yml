@@ -11,18 +11,12 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions: write-all
 
     strategy:
       matrix:
         python-versions: ['3.10']
 
-    permissions:
-      id-token: write
-      contents: write
-      issues: write
-      pull-requests: write
-      actions: write
-      repository-projects: write
 
     outputs:
       package_version: ${{ steps.variables_step.outputs.package_version }}
