@@ -58,13 +58,6 @@ jobs:
           poetry lock
           poetry build
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          body_path: ${{ steps.build_changelog.outputs.changelog }}
-          #token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
-
       - name: Publish to PYPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
