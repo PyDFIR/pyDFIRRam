@@ -63,7 +63,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: ${{ steps.build_changelog.outputs.changelog }}
-          repository: PyDFIR/pyDFIRRam
           #token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
 
       - name: Publish to PYPI
