@@ -45,7 +45,7 @@ nav:
       - Index: reference/reference.md
       - Base: reference/base.md
       - Handler: reference/handler.md
-      - Renderer: reference/rendere.md
+      - Renderer: reference/renderer.md
       - Utils: reference/utils.md
   - explanation.md
 
