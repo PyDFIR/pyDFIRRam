@@ -1,4 +1,9 @@
-""" Todo: Add module docstring. """
+"""
+This module provides utilities for hashing files.
+
+Functions:
+    get_hash(path: Path) -> str: Calculates and returns the SHA-256 hash of the specified file.
+"""
 
 import hashlib
 
@@ -9,10 +14,12 @@ def get_hash(path: Path) -> str:
     """
     Get the hash of a file.
 
-    This method opens the specified file in binary mode and calculates the SHA-256 hash by traversing the file in
-    blocks of 4096 bytes. The hash is updated at each iteration to include the contents of the processed block.
+    This method opens the specified file in binary mode and calculates the SHA-256 
+    hash by traversing the file inblocks of 4096 bytes. The hash is updated at each iteration
+    to include the contents of the processed block.
 
-    Once the entire file has been processed, the method returns the SHA-256 hash value in hexadecimal format.
+    Once the entire file has been processed, the method returns the SHA-256 hash 
+    value in hexadecimal format.
 
     Note: This method is intended for internal use by the specific code and must not be called
     directly from other parts of the code.
