@@ -1,3 +1,3 @@
-# Renderer
+## Renderer
 
 ::: pydfirram.core.renderer
