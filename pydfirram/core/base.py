@@ -23,7 +23,7 @@ Example:
         >>> plugin = generic.get_plugin("Banners")
         >>> generic.run_plugin(plugin)
 
-    OR :
+Example:
         $ python3
         >>> from pydfirram.core.base import Generic, OperatingSystem
         >>> from pathlib import Path
