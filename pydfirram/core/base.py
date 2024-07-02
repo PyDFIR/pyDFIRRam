@@ -24,6 +24,8 @@ Example:
         >>> generic.run_plugin(plugin)
 
 Example:
+    Or it can be used as follow : 
+
         $ python3
         >>> from pydfirram.core.base import Generic, OperatingSystem
         >>> from pathlib import Path
