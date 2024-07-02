@@ -30,7 +30,7 @@ Example:
         >>> os = OperatingSystem.WINDOWS
         >>> dumpfile = Path("tests/data/dump.raw")
         >>> generic = Generic(dumpfile)
-        >>> plugin = generic.pslist().to_dict()
+        >>> plugin = generic.pslist().to_df()
         >>> print(plugin)
 """
 

@@ -1,4 +1,12 @@
-"""todo"""
+"""
+This module provides utilities for rendering data in various formats, specifically
+focusing on rendering Volatility framework data into JSON and pandas DataFrames.
+
+Classes:
+    TreeGrid_to_json: A class for rendering Volatility TreeGrid data into JSON format.
+    Renderer: A class for rendering data into human-readable formats such as lists, 
+              JSON strings, and pandas DataFrames.
+"""
 
 import datetime
 from json import JSONEncoder,dumps,loads
