@@ -43,6 +43,10 @@ nav:
   - how-to-guides.md
   - Reference:
       - Index: reference/reference.md
+      - Base: reference/base.md
+      - Handler: reference/handler.md
+      - Renderer: reference/rendere.md
+      - Utils: reference/utils.md
   - explanation.md
 
 extra:
