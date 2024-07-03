@@ -44,7 +44,7 @@ nav:
   - index.md
   - Installation.md
   - Usage:
-    - Installation : Usage/installation.md
+    - Installation : Usage/Installation.md
     - Windows : Usage/Windows.md
     - Linux/Mac : Usage/Linux.md
   - Reference:
