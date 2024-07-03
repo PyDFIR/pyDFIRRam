@@ -46,8 +46,7 @@ nav:
   - How-To:
     - Installation : How-To/installation.md
     - Windows : How-To/Windows.md
-    #- Mac :
-    #- Linux :
+    - Linux/Mac : How-To/Linux.md
   - Reference:
       - Index: reference/reference.md
       - Base: reference/base.md
