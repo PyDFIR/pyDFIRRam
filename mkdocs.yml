@@ -55,7 +55,7 @@ markdown_extensions:
 
 nav:
   - index.md
-  - Installation.md
+  - explanation.md
   - Usage:
     - Installation : Usage/installation.md
     - Windows : Usage/windows.md
@@ -67,8 +67,7 @@ nav:
       - Renderer: reference/renderer.md
       - Utils: reference/utils.md
       - Windows : reference/windows.md
-  - explanation.md
-  - test.md
+      - Testing : reference/test.md
 
 extra:
   version:
