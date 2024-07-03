@@ -9,7 +9,6 @@ edit_uri: edit/main/docs/
 
 theme:
   palette:
-    primary : black
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
