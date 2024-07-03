@@ -43,10 +43,10 @@ markdown_extensions:
 nav:
   - index.md
   - Installation.md
-  - How-To:
-    - Installation : How-To/installation.md
-    - Windows : How-To/Windows.md
-    - Linux/Mac : How-To/Linux.md
+  - Usage:
+    - Installation : Usage/installation.md
+    - Windows : Usage/Windows.md
+    - Linux/Mac : Usage/Linux.md
   - Reference:
       - Index: reference/reference.md
       - Base: reference/base.md
@@ -55,6 +55,7 @@ nav:
       - Utils: reference/utils.md
       - Windows : reference/windows.md
   - explanation.md
+  - test.md
 
 extra:
   version:
