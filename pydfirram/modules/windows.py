@@ -27,7 +27,8 @@ Example:
         >>> print(plugin)
 """
 
-from pydfirram.core.base import Generic, OperatingSystem
+from pydfirram.core.base import Generic, OperatingSystem,Context
+from pydfirram.core.renderer import Renderer
 
 
 class Windows(Generic):
@@ -60,4 +61,17 @@ class Windows(Generic):
         --------
         >>> windows = Windows("path/to/dump.raw": Path)
         """
+        self.dump_files = dumpfile
         super().__init__(OperatingSystem.WINDOWS, dumpfile)
+    def _set_argument(self,context, prefix, kwargs):
+        for k, v in kwargs.items():
+            context.config[prefix+k] = int(v)
+        return context
+
+    def dumpfile(self,**kwargs):
+        plugin = self.get_plugin("dumpfiles")
+        context = Context(OperatingSystem.WINDOWS, self.dump_files, plugin) # type: ignore
+        runable_context =context.build()
+        if kwargs:
+            self._set_argument(runable_context,"plugins.DumpFiles.",kwargs)
+        return Renderer(runable_context.run()).to_list()

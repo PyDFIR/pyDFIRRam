@@ -146,7 +146,13 @@ class Context:
         self.context = contexts.Context()
         self.plugin = plugin
 
-    def build(self) -> interfaces.plugins.PluginInterface:
+    def set_context(self):
+        self.context.config['plugins.DumpFiles.physaddr'] = int(533517296)
+        dump_file_location = self.get_dump_file_location()
+        self.context.config[self.KEY_STACKERS] = self.os_stackers()
+        self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
+
+    def build(self, **kwargs) -> interfaces.plugins.PluginInterface:
         """Build a basic context for the provided plugin.
 
         Returns:
@@ -157,11 +163,9 @@ class Context:
         """
         plugin = self.plugin.interface
         automagics = self.automagics()
-        dump_file_location = self.get_dump_file_location()
+        self.set_context()
         base_config_path = "plugins"
         file_handler = create_file_handler(os.getcwd())
-        self.context.config[self.KEY_STACKERS] = self.os_stackers()
-        self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
         try:
             # Construct the plugin, clever magic figures out how to
             # fulfill each requirement that might not be fulfilled
@@ -314,7 +318,6 @@ class Generic:
         """
         self.context = Context(self.os, self.dump_file, plugin) # type: ignore
         context = self.context.build() # type: ignore
-        
         if kwargs:
             context = self.context.add_arguments(context,kwargs)
         if self.context is None:
