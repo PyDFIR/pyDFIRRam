@@ -67,7 +67,7 @@ class Windows(Generic):
     def _set_argument(self,context, prefix, kwargs):
         for k, v in kwargs.items():
             print(k,v)
-            context.config[prefix+k] = int(v)
+            context.config[prefix+k] = v
         return context
 
     def dumpfiles(self,**kwargs) -> None:
