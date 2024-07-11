@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from pydfirram.core.base import Generic, OperatingSystem
+from pydfirram.modules.windows import Windows
 from pydfirram.core.renderer import Renderer
 from loguru import logger
 from .config import DUMP_FILE
@@ -16,6 +17,12 @@ def generic_instance() -> Generic:
     os = OperatingSystem.WINDOWS
     dumpfile = Path(DUMP_FILE)
     return Generic(os, dumpfile)
+
+@pytest.fixture
+def windows_instance() -> Windows :
+    dumpfile = Path(DUMP_FILE)
+    return Windows(dumpfile)
+
 
 def test_volatility_pslist(generic_instance: Generic) -> None:
     """
@@ -158,3 +165,10 @@ def test_pstree(generic_instance : Generic) -> None :
     assert isinstance(cmdline_content,list),"Not a list"
     assert len(cmdline_content) > 0
     logger.success("TEST PASSED !")
+
+def test_dumpfile_with_args_physaddr(windows_instance : Windows):
+    try:
+        result = windows_instance.dumpfile(physaddr=533517296)
+        assert result is not None, "The dumpfile method should return a non-null result"
+    except Exception as e:
+        pytest.fail(f"An exception should not be raised: {e}")

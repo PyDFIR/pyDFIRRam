@@ -74,4 +74,4 @@ class Windows(Generic):
         runable_context =context.build()
         if kwargs:
             self._set_argument(runable_context,"plugins.DumpFiles.",kwargs)
-        return Renderer(runable_context.run()).to_list()
+        return Renderer(runable_context.run())

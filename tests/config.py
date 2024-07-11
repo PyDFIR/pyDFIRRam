@@ -1,3 +1,3 @@
 from pathlib import Path
 
-DUMP_FILE = Path("./data/dump.raw")
+DUMP_FILE = Path("data/raw.dmp")
