@@ -1,0 +1,3 @@
+"""
+pydfirram.core  - pydfirram core
+"""

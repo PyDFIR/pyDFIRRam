@@ -36,7 +36,10 @@ test = [
     "pytest-cov"
     ]
 
-dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml"]
+dev = [
+    "tox", "pre-commit", "virtualenv", "pip", "twine", "toml",
+    "pandas-stubs",
+]
 
 doc = [
     "mkdocs",

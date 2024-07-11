@@ -23,9 +23,11 @@ import io
 import os
 import tempfile
 
-from typing import Optional
+from typing import Optional, Any
 
-from volatility3.framework import interfaces
+from volatility3.framework.interfaces.plugins import (  # type: ignore
+    FileHandlerInterface    as V3FileHandlerInterface,
+)
 
 
 def create_file_handler(output_dir: Optional[str]) -> type:
@@ -38,9 +40,9 @@ def create_file_handler(output_dir: Optional[str]) -> type:
         type: A file handler class that saves files directly to disk.
     """
 
-    class CLIFileHandler(interfaces.plugins.FileHandlerInterface):
-        """The FileHandler from Volatility3 CLI."""
-
+    class CLIFileHandler(V3FileHandlerInterface): # type: ignore
+        """The FileHandler from Volatility3 CLI.
+        """
         def _get_final_filename(self) -> str:
             """Gets the final filename for the saved file."""
             if output_dir is None:
@@ -63,16 +65,23 @@ def create_file_handler(output_dir: Optional[str]) -> type:
 
             return output_filename
 
-    class CLIDirectFileHandler(CLIFileHandler):
-        """A file handler class that saves files directly to disk."""
+        def close(self) -> None:
+            """ V3FileHandlerInterface require to implement this method """
 
-        def __init__(self, filename: str):
+    class CLIDirectFileHandler(CLIFileHandler):
+        """A file handler class that saves files directly to disk.
+        """
+        def __init__(self, filename: str) -> None:
             fd, temp_name = tempfile.mkstemp(
-                suffix=".vol3", prefix="tmp_", dir=output_dir
+                suffix  = ".vol3",
+                prefix  = "tmp_",
+                dir     = output_dir,
             )
 
+            # allow `io.open()` without using `with` context
+            # pylint: disable=R1732
             self._file = io.open(fd, mode="w+b")
-            CLIFileHandler.__init__(self, filename)
+            CLIFileHandler.__init__(self, filename) # type: ignore
 
             for attr in dir(self._file):
                 if not attr.startswith("_") and attr not in [
@@ -85,25 +94,29 @@ def create_file_handler(output_dir: Optional[str]) -> type:
 
             self._name = temp_name
 
-        def __getattr__(self, item):
+        def __getattr__(self, item: Any) -> Any:
             return getattr(self._file, item)
 
+        ## properties
+
         @property
-        def closed(self):
+        def closed(self) -> bool:
             """Returns whether the file is closed."""
             return self._file.closed
 
         @property
-        def mode(self):
+        def mode(self) -> str:
             """Returns the mode of the file."""
             return self._file.mode
 
         @property
-        def name(self):
+        def name(self) -> str:
             """Returns the name of the file."""
             return self._file.name
 
-        def close(self):
+        ## methods
+
+        def close(self) -> None:
             """Closes and commits the file
             by moving the temporary file to the correct name.
             """
