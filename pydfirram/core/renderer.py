@@ -147,7 +147,25 @@ class Renderer:
         except Exception as e:
             logger.error("Impossible to render data in dictionary form.")
             raise e
+    def file_render(self)-> None:
+        """
+        Convert the data to a list format.
 
+        This method attempts to render the input data using the TreeGrid_to_json class,
+        and convert it to a dictionary.
+
+        Returns:
+            Dict: The rendered data in list format.
+
+        Raises:
+            Exception: If rendering the data fails.
+        """
+        try:
+            formatted = TreeGrid_to_json().render(self.data)
+        except Exception as e:
+            logger.error("Impossible to render data in dictionary form.")
+            raise e
+    
     def to_json(self) -> str:
         """
         Convert the data to a JSON string.
