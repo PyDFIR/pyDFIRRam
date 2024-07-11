@@ -145,14 +145,18 @@ class Context:
         self.dump_file = dump_file
         self.context = contexts.Context()
         self.plugin = plugin
+        self.automag : automagic
 
     def set_context(self):
-        self.context.config['plugins.DumpFiles.physaddr'] = int(533517296)
         dump_file_location = self.get_dump_file_location()
         self.context.config[self.KEY_STACKERS] = self.os_stackers()
         self.context.config[self.KEY_SINGLE_LOCATION] = dump_file_location
-
-    def build(self, **kwargs) -> interfaces.plugins.PluginInterface:
+    
+    def set_automagic(self):
+        self.automag = self.automagics()
+    
+    
+    def build(self) -> interfaces.plugins.PluginInterface:
         """Build a basic context for the provided plugin.
 
         Returns:
@@ -162,8 +166,8 @@ class Context:
             VolatilityExceptions.UnsatisfiedException: If the plugin cannot be built.
         """
         plugin = self.plugin.interface
-        automagics = self.automagics()
-        self.set_context()
+        #automagics = self.automagics()
+        #self.set_context()
         base_config_path = "plugins"
         file_handler = create_file_handler(os.getcwd())
         try:
@@ -171,7 +175,7 @@ class Context:
             # fulfill each requirement that might not be fulfilled
             constructed = construct_plugin(
                 self.context,
-                automagics,
+                self.automag,
                 plugin,  # type: ignore
                 base_config_path,
                 None,  # no progress callback for now
@@ -317,6 +321,8 @@ class Generic:
             ValueError: If the context is not built.
         """
         self.context = Context(self.os, self.dump_file, plugin) # type: ignore
+        self.context.set_automagic()
+        self.context.set_context()
         context = self.context.build() # type: ignore
         if kwargs:
             context = self.context.add_arguments(context,kwargs)

@@ -166,9 +166,48 @@ def test_pstree(generic_instance : Generic) -> None :
     assert len(cmdline_content) > 0
     logger.success("TEST PASSED !")
 
+@pytest.mark.dumpfile_physaddr
 def test_dumpfile_with_args_physaddr(windows_instance : Windows):
+    current_directory = Path.cwd()
+    initial_files = set(current_directory.glob("file.*"))
+    new_files = set()
+
     try:
         result = windows_instance.dumpfile(physaddr=533517296)
-        assert result is not None, "The dumpfile method should return a non-null result"
+        assert result is None, "The dumpfile method should return a non-null result"
+        # Check if new files starting with 'file.' are created
+        new_files = set(current_directory.glob("file.*")) - initial_files
+        assert len(new_files) == 1, f"Expected exactly one new file starting with 'file.', but found {len(new_files)}"
     except Exception as e:
         pytest.fail(f"An exception should not be raised: {e}")
+
+    finally:
+        # Clean up any new files created during the test
+        for new_file in new_files:
+            try:
+                new_file.unlink()
+            except Exception as cleanup_error:
+                print(f"Failed to delete {new_file}: {cleanup_error}")
+@pytest.mark.dumpfile_virtaddr
+def test_dumpfile_with_args_virtaddr(windows_instance : Windows):
+    current_directory = Path.cwd()
+    initial_files = set(current_directory.glob("file.*"))
+    new_files = set()
+    value = 533517296
+    try:
+        result = windows_instance.dumpfile(virtaddr=value)
+        # Check if new files starting with 'file.' with the value in hex are created
+        file_created = "file." + hex(value)
+        new_files = set(current_directory.glob(file_created)) - initial_files
+        assert len(new_files) == 1, f"Expected exactly one new file starting with 'file.', but found {len(new_files)}"
+
+    except Exception as e:
+        pytest.fail(f"An exception should not be raised: {e}")
+
+    finally:
+        # Clean up any new files created during the test
+        for new_file in new_files:
+            try:
+                new_file.unlink()
+            except Exception as cleanup_error:
+                print(f"Failed to delete {new_file}: {cleanup_error}")
