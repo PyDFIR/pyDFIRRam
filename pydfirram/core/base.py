@@ -323,12 +323,12 @@ class Generic:
         self.context = Context(self.os, self.dump_file, plugin) # type: ignore
         self.context.set_automagic()
         self.context.set_context()
-        context = self.context.build() # type: ignore
+        builded_context = self.context.build() # type: ignore
         if kwargs:
-            context = self.context.add_arguments(context,kwargs)
+            runable_context = self.context.add_arguments(builded_context,kwargs)
         if self.context is None:
             raise ValueError("Context not built.")
-        return context.run()
+        return runable_context.run()
 
     def validate_dump_file(self, dump_file: Path) -> bool:
         """Validate dump file location.

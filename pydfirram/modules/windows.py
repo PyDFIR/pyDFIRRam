@@ -66,6 +66,7 @@ class Windows(Generic):
 
     def _set_argument(self,context, prefix, kwargs):
         for k, v in kwargs.items():
+            print(k,v)
             context.config[prefix+k] = int(v)
         return context
 
@@ -74,18 +75,8 @@ class Windows(Generic):
         context = Context(OperatingSystem.WINDOWS, self.dump_files, plugin) # type: ignore
         context.set_automagic()
         context.set_context()
-        runable_context = context.build()
+        builded_context = context.build()
         if kwargs:
-            context.add_arguments(context,kwargs)
+            runable_context = context.add_arguments(builded_context,kwargs)
             #self._set_argument(context.context,"plugins.DumpFiles.",kwargs)
-        Renderer(runable_context.run()).file_render()
-
-    def dumpfile_pid(self,**kwargs) -> None:
-        plugin = self.get_plugin("dumpfiles")
-        context = Context(OperatingSystem.WINDOWS, self.dump_files, plugin) # type: ignore
-        
-        runable_context =context.build()
-        runable_context.config["plugins.DumpFiles.pid"] = 4
-        #if kwargs:
-        #    self._set_argument(runable_context,"plugins.DumpFiles.",kwargs)
         Renderer(runable_context.run()).file_render()
