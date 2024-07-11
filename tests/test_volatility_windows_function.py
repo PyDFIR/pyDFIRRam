@@ -38,6 +38,7 @@ def test_volatility_pslist(generic_instance: Generic) -> None:
     logger.success("TEST PASSED!")
 
 @pytest.mark.pslist
+@pytest.mark.pslist_pid
 def test_volatilty_pslist_with_args_pid(generic_instance : Generic) -> None :
     logger.opt(colors=True).info("<b><cyan>pslist</cyan></b> with args from volatility is running")
     output : Renderer = generic_instance.pslist(pid=[4])
