@@ -107,4 +107,6 @@ class Windows(Generic):
         builded_context = context.build()
         if kwargs:
             runable_context = context.add_arguments(builded_context,kwargs)
+        else:
+            runable_context = builded_context
         Renderer(runable_context.run()).file_render()

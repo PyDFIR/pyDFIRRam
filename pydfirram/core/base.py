@@ -326,6 +326,8 @@ class Generic:
         builded_context = self.context.build() # type: ignore
         if kwargs:
             runable_context = self.context.add_arguments(builded_context,kwargs)
+        else:
+            runable_context = builded_context
         if self.context is None:
             raise ValueError("Context not built.")
         return runable_context.run()
