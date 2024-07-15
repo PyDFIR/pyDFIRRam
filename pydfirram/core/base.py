@@ -440,21 +440,17 @@ class Generic():
             ValueError: If the context is not built.
         """
         # (todo) : move `context.set_*()` in `Context.__init__()` ?
-        # (fixme) : `add_arguments()` do not take `PluginInterface`
-        # (fixme) : `runable_context()` may not exist if `kwargs` is empty
-        #
-        #self.context = Context(self.os, self.dump_file, plugin)
-        #self.context.set_automagic()
-        #self.context.set_context()
-        #builded_context = self.context.build()
-        #if kwargs:
-        #    runable_context = self.context.add_arguments(
-        #        builded_context,
-        #        **kwargs,
-        #    )
-        #if self.context is None:
-        #    raise ValueError("Context not built.")
-        #return runable_context.run()
+        self.context = Context(self.os, self.dump_file, plugin) # type: ignore
+        self.context.set_automagic()
+        self.context.set_context()
+        builded_context = self.context.build() # type: ignore
+        if kwargs:
+            runable_context = self.context.add_arguments(builded_context,kwargs)
+        else:
+            runable_context = builded_context
+        if self.context is None:
+            raise ValueError("Context not built.")
+        return runable_context.run()
 
     def validate_dump_file(self, dump_file: Path) -> bool:
         """Validate dump file location.

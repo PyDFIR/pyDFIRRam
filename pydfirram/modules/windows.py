@@ -126,10 +126,9 @@ class Windows(Generic):
         )
         context.set_automagic()
         context.set_context()
-        # (fixme) : `add_arguments()` require `Context()` not `V3PluginInterface`
-        # (fixme) : `runnable_context` may not exist if `kwarg` is empty
-
-        #builded_context = context.build()
-        #if kwargs:
-        #    runable_context = context.add_arguments(builded_context,kwargs)
-        #Renderer(runable_context.run()).file_render()
+        builded_context = context.build()
+        if kwargs:
+            runable_context = context.add_arguments(builded_context,kwargs)
+        else:
+            runable_context = builded_context
+        Renderer(runable_context.run()).file_render()
