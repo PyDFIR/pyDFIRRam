@@ -30,7 +30,7 @@ from typing import Any
 from pathlib import Path
 
 from pydfirram.core.base import Generic, OperatingSystem,Context
-#from pydfirram.core.renderer import Renderer
+from pydfirram.core.renderer import Renderer
 
 
 class Windows(Generic):
@@ -75,11 +75,11 @@ class Windows(Generic):
 
     # (todo) : seems to be a boilerplate from `Context`
     # (todo) : add typing information
-    #def _set_argument(self, context, prefix, kwargs):
-    #    for k, v in kwargs.items():
-    #        print(k,v)
-    #        context.config[prefix+k] = v
-    #    return context
+    def _set_argument(self, context, prefix, kwargs):
+        for k, v in kwargs.items():
+            print(k,v)
+            context.config[prefix+k] = v
+        return context
 
     def dumpfiles(self, **_kwargs: dict[str,Any]) -> None:
         """
@@ -127,8 +127,8 @@ class Windows(Generic):
         context.set_automagic()
         context.set_context()
         builded_context = context.build()
-        if kwargs:
-            runable_context = context.add_arguments(builded_context,kwargs)
+        if _kwargs:
+            runable_context = context.add_arguments(builded_context,_kwargs)
         else:
             runable_context = builded_context
         Renderer(runable_context.run()).file_render()

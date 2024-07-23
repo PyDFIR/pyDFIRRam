@@ -48,7 +48,11 @@ from loguru import logger
 from volatility3.framework import (                         # type: ignore
     import_files            as v3_framework_import_files,
     list_plugins            as v3_framework_list_plugins,
+)
+
+from volatility3 import (
     plugins                 as v3_framework_plugins_mod,
+
 )
 from volatility3.framework.contexts import (                # type: ignore
     Context                 as V3Context,
@@ -325,9 +329,9 @@ class Generic():
             FileNotFoundError: If the dump file does not exist.
         """
         self.validate_dump_file(dump_file)
-
         self.os = operating_system
         self.plugins: list[PluginEntry] = self.get_all_plugins()
+        print(self.plugins)
         self.dump_file = dump_file
         self.context: Optional[Context] = None
         self.temp_data = None
@@ -377,7 +381,7 @@ class Generic():
         """
         failures = v3_framework_import_files(
             base_module     = v3_framework_plugins_mod,
-            ignore_errors   = True,
+            ignore_errors   = True
         )
         if failures:
             logger.warning(f"Failed to import some plugins: {failures}")
