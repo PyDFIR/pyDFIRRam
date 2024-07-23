@@ -196,8 +196,6 @@ class Context():
             V3UnsatisfiedException: If the plugin cannot be built.
         """
         plugin = self.plugin.interface
-        #automagics = self.automagics()
-        #self.set_context()
         base_config_path = "plugins"
         file_handler = create_file_handler(os.getcwd())
         try:
