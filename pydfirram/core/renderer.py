@@ -236,7 +236,7 @@ class Renderer():
             if max_row:
                 pd.set_option('display.max_rows', None)
                 pd.set_option('display.max_columns', None)
-            return pd.DataFrame(data_as_dict.get("data"))
+            return pd.DataFrame(data_as_dict)
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e
