@@ -40,8 +40,7 @@ from volatility3.cli.text_renderer import (                 # type: ignore
 # allow no PascalCase naming style and "lambda may not be necessary"
 # pylint: disable=W0108,C0103
 # (todo) : switch to PascalCase
-
-class TreeGrid_to_json(V3CLIRenderer):      # type: ignore
+class TreeGrid_to_json(V3CLIRenderer):  # type: ignore
     """ simple TreeGrid to JSON
     """
     _type_renderers: Any = {
@@ -72,8 +71,8 @@ class TreeGrid_to_json(V3CLIRenderer):      # type: ignore
         """
         return []
 
-    # (fixme) : this methods should return nothing as defined in V3CLIRenderer
-    def render(self, grid: V3TreeGrid) -> list[V3TreeNode]:
+    # (fixme): This method should return nothing as defined in V3CLIRenderer
+    def render(self, grid: V3TreeGrid) -> dict[str, Any]:
         """
         Render the TreeGrid to JSON format.
 
@@ -84,15 +83,14 @@ class TreeGrid_to_json(V3CLIRenderer):      # type: ignore
             Dict: The JSON representation of the TreeGrid.
         """
         final_output: tuple[
-            dict[str, list[V3TreeNode]],
-            list[V3TreeNode],
+            dict[str, dict[str, Any]],
+            list[dict[str, Any]],
         ] = ({}, [])
-
 
         def visitor(
             node: V3TreeNode,
-            accumulator: tuple[dict[str,Any], list[dict[str,Any]]],
-        ) -> tuple[dict[str,Any], list[dict[str,Any]]]:
+            accumulator: tuple[dict[str, Any], list[dict[str, Any]]],
+        ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
             """
             A visitor function to process each node in the TreeGrid.
 
@@ -102,7 +100,7 @@ class TreeGrid_to_json(V3CLIRenderer):      # type: ignore
                     The accumulator containing the accumulated results.
 
             Returns:
-                Tuple[Dict[str,Any], List[Dict[str, Any]]]: The updated
+                Tuple[Dict[str, Any], List[Dict[str, Any]]]: The updated
                     accumulator.
             """
             acc_map = accumulator[0]
@@ -111,8 +109,8 @@ class TreeGrid_to_json(V3CLIRenderer):      # type: ignore
 
             for column_index, column in enumerate(grid.columns):
                 renderer = self._type_renderers.get(
-                    key     = column.type,
-                    default = self._type_renderers["default"],
+                    column.type,
+                    self._type_renderers["default"]
                 )
                 data = renderer(
                     list(node.values)[column_index],
@@ -132,11 +130,11 @@ class TreeGrid_to_json(V3CLIRenderer):      # type: ignore
             grid.populate(visitor, final_output)
         else:
             grid.visit(
-                node                = None,
-                function            = visitor,
-                initial_accumulator = final_output,
+                node=None,
+                function=visitor,
+                initial_accumulator=final_output,
             )
-        return final_output[1]
+        return {"data": final_output[1]}
 
 
 class Renderer():
@@ -159,7 +157,7 @@ class Renderer():
         """
         self.data = data
 
-    def to_list(self) -> dict[str,Any]:
+    def to_list(self):
         """
         Convert the data to a list format.
 
@@ -174,7 +172,8 @@ class Renderer():
         """
         try:
             # (fixme) : `render()` should return nothing
-            return TreeGrid_to_json().render(self.data)
+            parsed_data : dict[str, Any] = TreeGrid_to_json().render(self.data)
+            return parsed_data.get("data")
         except Exception as e:
             logger.error("Impossible to render data in dictionary form.")
             raise e
@@ -237,7 +236,7 @@ class Renderer():
             if max_row:
                 pd.set_option('display.max_rows', None)
                 pd.set_option('display.max_columns', None)
-            return pd.DataFrame(data_as_dict)
+            return pd.DataFrame(data_as_dict.get("data"))
         except Exception as e:
             logger.error("Data cannot be rendered as a DataFrame.")
             raise e

@@ -32,7 +32,6 @@ def test_volatility_pslist(generic_instance: Generic) -> None:
     output: Renderer = generic_instance.pslist()
     assert isinstance(output, Renderer), "Output is not an instance of Renderer"
     pslist_content: List[Any] = output.to_list()
-    print(type(pslist_content))
     assert isinstance(pslist_content, list), "Output content is not a list"
     assert len(pslist_content) > 0, "Output list is empty"
     logger.success("TEST PASSED!")

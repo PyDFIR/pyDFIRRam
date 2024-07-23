@@ -331,7 +331,6 @@ class Generic():
         self.validate_dump_file(dump_file)
         self.os = operating_system
         self.plugins: list[PluginEntry] = self.get_all_plugins()
-        print(self.plugins)
         self.dump_file = dump_file
         self.context: Optional[Context] = None
         self.temp_data = None
