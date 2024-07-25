@@ -1,1 +1,3 @@
-#For poetry builds
+"""
+pydfirram   - simplify and enhance memory forensics tasks
+"""

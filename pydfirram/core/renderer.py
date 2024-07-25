@@ -1,49 +1,78 @@
-"""todo"""
+"""
+This module provides utilities for rendering data in various formats,
+specifically focusing on rendering Volatility framework data into JSON and
+pandas DataFrames.
+
+Classes:
+    TreeGrid_to_json: A class for rendering Volatility TreeGrid data into
+                JSON format.
+    Renderer: A class for rendering data into human-readable formats such
+                as lists, JSON strings, and pandas DataFrames.
+"""
 
 import datetime
-from json import JSONEncoder,dumps,loads
-from typing import Any, Tuple, List, Dict
+from json import dumps
+from typing import Any
 
 import pandas as pd
 from loguru import logger
-
-from volatility3.framework.renderers import format_hints
-from volatility3.framework import interfaces
-from volatility3.cli import (
-    text_renderer,
+from volatility3.framework.interfaces.renderers import (  # type: ignore
+    Disassembly             as V3Disassembly,
+    BaseAbsentValue         as V3BaseAbsentValue,
+    RenderOption            as V3RenderOption,
+    TreeGrid                as V3TreeGrid,
+    TreeNode                as V3TreeNode,
+)
+from volatility3.framework.renderers.format_hints import (  # type: ignore
+    HexBytes                as V3HexBytes,
+    MultiTypeData           as V3MultiTypeData,
+)
+from volatility3.cli.text_renderer import (                 # type: ignore
+    CLIRenderer             as V3CLIRenderer,
+    optional                as v3_optional,
+    quoted_optional         as v3_quoted_optional,
+    hex_bytes_as_text       as v3_hex_bytes_as_text,
+    display_disassembly     as v3_display_disassembly,
+    multitypedata_as_text   as v3_multitypedata_as_text,
 )
 
 
-class TreeGrid_to_json(text_renderer.CLIRenderer):
-    _type_renderers = {
-        format_hints.HexBytes: lambda x: text_renderer.quoted_optional(
-            text_renderer.hex_bytes_as_text
+# allow no PascalCase naming style and "lambda may not be necessary"
+# pylint: disable=W0108,C0103
+# (todo) : switch to PascalCase
+class TreeGrid_to_json(V3CLIRenderer):  # type: ignore
+    """ simple TreeGrid to JSON
+    """
+    _type_renderers: Any = {
+        V3HexBytes: lambda x: v3_quoted_optional(
+            v3_hex_bytes_as_text,
         )(x),
-        interfaces.renderers.Disassembly: lambda x: text_renderer.quoted_optional(
-            text_renderer.display_disassembly
+        V3Disassembly: lambda x: v3_quoted_optional(
+            v3_display_disassembly,
         )(x),
-        format_hints.MultiTypeData: lambda x: text_renderer.quoted_optional(
-            text_renderer.multitypedata_as_text
+        V3MultiTypeData: lambda x: v3_quoted_optional(
+            v3_multitypedata_as_text,
         )(x),
-        bytes: lambda x: text_renderer.optional(
+        bytes: lambda x: v3_optional(
             lambda x: " ".join([f"{b:02x}" for b in x])
         )(x),
-        datetime.datetime: lambda x: x.isoformat()
-        if not isinstance(x, interfaces.renderers.BaseAbsentValue)
-        else None,
+        datetime.datetime: lambda x: (
+            x.isoformat() if not isinstance(x, V3BaseAbsentValue) else None
+        ),
         "default": lambda x: x,
     }
 
     name = "JSON"
     structured_output = True
 
-    def get_render_options(self) -> List[interfaces.renderers.RenderOption]:
+    def get_render_options(self) -> list[V3RenderOption]:
         """
         Get render options.
         """
-        pass
+        return []
 
-    def render(self, grid: interfaces.renderers.TreeGrid) -> Dict:
+    # (fixme): This method should return nothing as defined in V3CLIRenderer
+    def render(self, grid: V3TreeGrid) -> dict[str, Any]:
         """
         Render the TreeGrid to JSON format.
 
@@ -53,36 +82,40 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
         Returns:
             Dict: The JSON representation of the TreeGrid.
         """
-        final_output: Tuple[
-            Dict[str, List[interfaces.renderers.TreeNode]],
-            List[interfaces.renderers.TreeNode],
+        final_output: tuple[
+            dict[str, dict[str, Any]],
+            list[dict[str, Any]],
         ] = ({}, [])
+
         def visitor(
-            node: interfaces.renderers.TreeNode,
-            accumulator: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]],
-        ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
-            
+            node: V3TreeNode,
+            accumulator: tuple[dict[str, Any], list[dict[str, Any]]],
+        ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
             """
             A visitor function to process each node in the TreeGrid.
 
             Args:
-                node (interfaces.renderers.TreeNode): The current node being visited.
-                accumulator (Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]):
+                node (V3TreeNode): The current node being visited.
+                accumulator (Tuple[Dict[str, Any], List[Dict[str, Any]]]):
                     The accumulator containing the accumulated results.
 
             Returns:
-                Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]: The updated accumulator.
+                Tuple[Dict[str, Any], List[Dict[str, Any]]]: The updated
+                    accumulator.
             """
-            acc_map, final_tree = accumulator
-            node_dict: Dict[str, Any] = {"__children": []}
+            acc_map = accumulator[0]
+            final_tree = accumulator[1]
+            node_dict: dict[str, Any] = {"__children": []}
 
-            for column_index in range(len(grid.columns)):
-                column = grid.columns[column_index]
+            for column_index, column in enumerate(grid.columns):
                 renderer = self._type_renderers.get(
-                    column.type, self._type_renderers["default"]
+                    column.type,
+                    self._type_renderers["default"]
                 )
-                data = renderer(list(node.values)[column_index])
-                if isinstance(data, interfaces.renderers.BaseAbsentValue):
+                data = renderer(
+                    list(node.values)[column_index],
+                )
+                if isinstance(data, V3BaseAbsentValue):
                     data = None
                 node_dict[column.name] = data
 
@@ -96,16 +129,20 @@ class TreeGrid_to_json(text_renderer.CLIRenderer):
         if not grid.populated:
             grid.populate(visitor, final_output)
         else:
-            grid.visit(node=None, function=visitor, initial_accumulator=final_output)
-        return final_output[1]
+            grid.visit(
+                node=None,
+                function=visitor,
+                initial_accumulator=final_output,
+            )
+        return {"data": final_output[1]}
 
 
-class Renderer:
+class Renderer():
     """
     Class for rendering data in various formats.
 
-    This class provides methods to render data into human-readable formats such as lists,
-    JSON strings, and pandas DataFrames.
+    This class provides methods to render data into human-readable formats
+    such as lists, JSON strings, and pandas DataFrames.
 
     Attributes:
         data (Any): The input data to be rendered.
@@ -120,12 +157,12 @@ class Renderer:
         """
         self.data = data
 
-    def to_list(self) -> Dict:
+    def to_list(self):
         """
         Convert the data to a list format.
 
-        This method attempts to render the input data using the TreeGrid_to_json class,
-        and convert it to a dictionary.
+        This method attempts to render the input data using the
+        TreeGrid_to_json class, and convert it to a dictionary.
 
         Returns:
             Dict: The rendered data in list format.
@@ -134,8 +171,29 @@ class Renderer:
             Exception: If rendering the data fails.
         """
         try:
-            formatted = TreeGrid_to_json().render(self.data)
-            return formatted
+            # (fixme) : `render()` should return nothing
+            parsed_data : dict[str, Any] = TreeGrid_to_json().render(self.data)
+            return parsed_data.get("data")
+        except Exception as e:
+            logger.error("Impossible to render data in dictionary form.")
+            raise e
+
+    def file_render(self)-> None:
+        """
+        Convert the data to a list format.
+
+        This method attempts to render the input data using the
+        TreeGrid_to_json class, and convert it to a dictionary.
+
+        Returns:
+            Dict: The rendered data in list format.
+
+        Raises:
+            Exception: If rendering the data fails.
+        """
+        try:
+            # (fixme) : `render()` return nothing
+            TreeGrid_to_json().render(self.data)
         except Exception as e:
             logger.error("Impossible to render data in dictionary form.")
             raise e
@@ -144,8 +202,8 @@ class Renderer:
         """
         Convert the data to a JSON string.
 
-        This method first converts the data to a list format, and then serializes it
-        to a JSON string.
+        This method first converts the data to a list format, and then
+        serializes it to a JSON string.
 
         Returns:
             str: The data serialized as a JSON string.
@@ -164,8 +222,8 @@ class Renderer:
         """
         Convert the data to a pandas DataFrame.
 
-        This method first converts the data to a list format, and then constructs
-        a pandas DataFrame from it.
+        This method first converts the data to a list format, and then
+        constructs a pandas DataFrame from it.
 
         Returns:
             pd.DataFrame: The data as a pandas DataFrame.

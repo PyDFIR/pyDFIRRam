@@ -43,13 +43,7 @@ test = [
 ]
 
 dev = [
-    "tox",
-    "pre-commit",
-    "virtualenv",
-    "pip",
-    "twine",
-    "toml",
-    "pandas-stubs",
+    "tox", "pre-commit", "virtualenv", "pip", "twine", "toml","pandas-stubs",
 ]
 
 doc = [

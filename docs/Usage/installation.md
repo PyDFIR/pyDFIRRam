@@ -3,10 +3,9 @@
 ## Quick installation
 
 ### Prerequisites 
-Install python3.10
-TODO
-Install : poetry 
-TODO
+- Python
+- Poetry (for dev)
+- pip
 
 ### From source
 On a standard Linux distribution :
@@ -15,8 +14,14 @@ git clone https://github.com/pydfir/pydfirram
 poetry shell
 poetry install
 ```
-### From pip
+### From pip stable
 
 ```shell
 pip install pydfirram
 ```
+### From pip dev
+
+```bash
+pip install -i https://test.pypi.org/simple/ pydfirram
+```
+

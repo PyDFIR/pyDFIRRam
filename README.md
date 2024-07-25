@@ -76,7 +76,7 @@ print(output.to_df())
 print(win.pslist().to_json())
 ```
 
-All supported features are documented, check it out on [our documentation](https://pydfir.github.io/pyDFIRRam/) !
+All supported features are documented, check it out on [our documentation](https://pydfir.github.io/pyDFIRRam) !
 
 ## Objectives
 
