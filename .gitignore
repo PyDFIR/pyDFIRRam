@@ -116,3 +116,5 @@ cython_debug/
 
 # Local Dev
 main.py
+
+tests/config.py
