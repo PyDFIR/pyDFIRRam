@@ -18,13 +18,40 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-volatility3 = "^2.5.2"
 pandas = "^2.2.2"
 regex = "^2024.4.28"
 graphviz = "^0.20.3"
 loguru = "^0.7.2"
 jupyter = "^1.0.0"
 mike = { version="^1.1.2", optional=true}
+
+
+# special handling for the main dependency 'volatility3' which requires to
+# build the package manually since it is not actively maintained in PiPy. But
+# some commits and updates are often pushed in the original repository. So,
+# it is better to use the most recent source base and to build it manually.
+#
+# @notes
+# - the package exposes a `pyproject.toml` that is supported by `poetry` BUT
+#   the dependencies installed are the minimum required ones for the package
+#   to work. Nevertheless, in our case, we need to install all dependencies
+#   to enable the plugin part of the framework
+# - since the volatility project uses the special "dynamic" feature from
+#   `setuptools` which is not supported by `poetry`, we need to install
+#   missed dependencies manually (this is a copy of the original
+#   `requirements.txt` from volatility repository).
+
+yara-python  = '^3.8.0'
+capstone     = '^3.0.5'
+pycryptodome = '*'
+leechcorepyc = '^2.4.0'
+gcsfs        = '^2023.1.0'
+s3fs         = '^2023.1.0'
+
+[tool.poetry.dependencies.volatility3]
+git             = 'https://github.com/volatilityfoundation/volatility3'
+branch          = 'develop'
+
 
 [tool.poetry.extras]
 test = [
