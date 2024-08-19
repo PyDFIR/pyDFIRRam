@@ -53,8 +53,8 @@ jobs:
           echo "::set-output name=package_version::`poetry version --short`"
         shell: bash
 
-      # - name: test with tox
-      #   run: tox
+      - name: test with tox
+        run: tox
 
   publish_dev_build:
     # if test failed, we should not publish
