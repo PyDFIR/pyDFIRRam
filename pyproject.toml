@@ -6,7 +6,7 @@ authors = [
     "Braguette <alexis.debrito@ecole2600.com>",
     "std3 <67806187+standard3@users.noreply.github.com>",
 ]
-classifiers = [
+classifiers=[
     'Development Status :: 2 - Pre-Alpha',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',
@@ -18,19 +18,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-volatility3 = { path = "./volatility3" }
+volatility3 = "^2.5.2"
 pandas = "^2.2.2"
 regex = "^2024.4.28"
 graphviz = "^0.20.3"
 loguru = "^0.7.2"
 jupyter = "^1.0.0"
-mike = { version = "^1.1.2", optional = true }
-
-[tool.poetry.scripts]
-build-submodules = "build_submodules:build_submodule"
-
-[tool.poetry.plugins."poetry.plugins.application.pre_install"]
-build-submodules = "build_submodules:build_submodule"
+mike = { version="^1.1.2", optional=true}
 
 [tool.poetry.extras]
 test = [
@@ -40,10 +34,11 @@ test = [
     "flake8",
     "flake8-docstrings",
     "pytest-cov"
-]
+    ]
 
 dev = [
-    "tox", "pre-commit", "virtualenv", "pip", "twine", "toml","pandas-stubs",
+    "tox", "pre-commit", "virtualenv", "pip", "twine", "toml",
+    "pandas-stubs",
 ]
 
 doc = [
@@ -55,7 +50,7 @@ doc = [
     "mkdocs-autorefs",
     "mike",
     "setuptools"
-]
+    ]
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
