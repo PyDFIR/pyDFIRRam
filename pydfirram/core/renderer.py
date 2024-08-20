@@ -13,6 +13,7 @@ Classes:
 import datetime
 from json import dumps
 from typing import Any
+from pathlib import Path
 
 import pandas as pd
 from loguru import logger
@@ -36,6 +37,7 @@ from volatility3.cli.text_renderer import (                 # type: ignore
     multitypedata_as_text   as v3_multitypedata_as_text,
 )
 
+from pydfirram.core.utils import load_from_cache, save_to_cache
 
 # allow no PascalCase naming style and "lambda may not be necessary"
 # pylint: disable=W0108,C0103
@@ -72,7 +74,7 @@ class TreeGrid_to_json(V3CLIRenderer):  # type: ignore
         return []
 
     # (fixme): This method should return nothing as defined in V3CLIRenderer
-    def render(self, grid: V3TreeGrid) -> dict[str, Any]:
+    def render(self, grid: V3TreeGrid, path: Path) -> dict[str, Any]:
         """
         Render the TreeGrid to JSON format.
 
@@ -134,7 +136,10 @@ class TreeGrid_to_json(V3CLIRenderer):  # type: ignore
                 function=visitor,
                 initial_accumulator=final_output,
             )
-        return {"data": final_output[1]}
+        print(path)
+        data = {"data": final_output[1]}
+        save_to_cache(path,data)
+        return data
 
 
 class Renderer():
@@ -148,14 +153,19 @@ class Renderer():
         data (Any): The input data to be rendered.
     """
 
-    def __init__(self, data: Any) -> None:
+    def __init__(self, in_cache: bool= False,path: Path = None,data: Any = None) -> None:
         """
         Initialize the Renderer with the provided data.
 
         Args:
             data (Any): The input data to be rendered.
         """
-        self.data = data
+        self.in_cache = in_cache
+        self.path = path
+        if in_cache == False:
+            self.data = TreeGrid_to_json().render(data,self.path)
+        else:
+            self.data = load_from_cache(self.path)
 
     def to_list(self):
         """
@@ -172,7 +182,7 @@ class Renderer():
         """
         try:
             # (fixme) : `render()` should return nothing
-            parsed_data : dict[str, Any] = TreeGrid_to_json().render(self.data)
+            parsed_data : dict[str, Any] = self.data
             return parsed_data.get("data")
         except Exception as e:
             logger.error("Impossible to render data in dictionary form.")

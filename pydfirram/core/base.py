@@ -42,6 +42,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, cast
 from collections.abc import Callable
+from pydfirram.core.utils import get_hash, exist_in_cache,get_default_cache_dir
 
 
 from loguru import logger
@@ -333,7 +334,7 @@ class Generic():
         self.context: Optional[Context] = None
         self.temp_data = None
         self.tmp_plugin: Optional[PluginEntry] = None
-
+        self.hash = get_hash(dump_file)
         logger.info(f"Generic OS initialized: {self.os}")
 
     def __getattr__(
@@ -356,20 +357,32 @@ class Generic():
         function that executes the __run_commands method for the given key.
         """
         key = key.lower()
+        
         try:
             plugin: PluginEntry = self.get_plugin(key)
         except Exception as exc:
             raise ValueError(f"Unable to handle {key}") from exc
+        ## Check if it's in cache
         def parse_data_function(**kwargs: dict[str,Any]) -> Renderer:
-            return Renderer(
-                data    = self.run_plugin(plugin,**kwargs)
+            in_cache,data = self.run_plugin(plugin,**kwargs)
+            return  Renderer(
+                in_cache    = in_cache,
+                path        = self.path_cache,
+                data        = data
             )
+
         return parse_data_function
 
     #---
     # Internals methods
     #---
-
+    def _check_cache(self,plugin: PluginEntry,**kwargs: dict[str, Any]) -> Renderer:
+            exists, path_cache = exist_in_cache(self.hash, plugin.name, kwargs)
+            self.path_cache = path_cache
+            if exists:
+                # If the file exists in cache
+                return Renderer(True, path_cache)
+            return None
     def _get_plugins_list(self) -> dict[str,Any]:
         """Get a list of available volatility3 plugins for the OS.
 
@@ -427,7 +440,7 @@ class Generic():
         self,
         plugin: PluginEntry,
         **kwargs: dict[str,Any],
-    ) -> Any:
+    ) -> tuple:
         """Run a volatility3 plugin with the given arguments.
 
         Args:
@@ -440,6 +453,9 @@ class Generic():
         Raises:
             ValueError: If the context is not built.
         """
+        cache_result = self._check_cache(plugin,**kwargs)
+        if cache_result:
+            return True,cache_result
         # (todo) : move `context.set_*()` in `Context.__init__()` ?
         self.context = Context(self.os, self.dump_file, plugin) # type: ignore
         self.context.set_automagic()
@@ -451,7 +467,7 @@ class Generic():
             runable_context = builded_context
         if self.context is None:
             raise ValueError("Context not built.")
-        return runable_context.run()
+        return False,runable_context.run()
 
     def validate_dump_file(self, dump_file: Path) -> bool:
         """Validate dump file location.

@@ -8,6 +8,7 @@ Functions:
 import hashlib
 
 from pathlib import Path
+from typing import Any, Tuple
 
 
 def get_hash(path: Path) -> str:
@@ -35,3 +36,48 @@ def get_hash(path: Path) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_obj.update(chunk)
         return hash_obj.hexdigest()
+import os
+import json
+
+def get_default_cache_dir() -> str:
+        """Détermine l'emplacement par défaut du cache selon le système d'exploitation."""
+        if os.name == 'nt':  # Windows
+            return os.path.join(os.getenv('LOCALAPPDATA'), 'my_volatility_wrapper', 'cache')
+        elif os.name == 'posix':  # Linux/MacOS
+            return os.path.expanduser('~/.cache/my_volatility_wrapper')
+        else:
+            raise NotImplementedError(f"Unsupported OS: {os.name}")
+    
+def exist_in_cache(hash: str, plugin_name: str, kwargs: dict[str, Any] | None = None) -> Tuple[bool, Path]:
+    """
+    Check if a cache file exists based on the hash, plugin name, and kwargs.
+
+    :param hash: The hash value to be used in the cache file path.
+    :param plugin_name: The name of the plugin used in the cache file path.
+    :param kwargs: Optional keyword arguments to be included in the cache file path.
+    :return: A tuple where the first element is a boolean indicating if the cache file exists,
+             and the second element is the Path object of the cache file.
+    """
+    # Generate the cache file name
+    arguments = ''.join(f'{key}{value}' for key, value in (kwargs or {}).items())
+    file_name = f"/{hash}{plugin_name}{arguments}"
+    full_path = Path(get_default_cache_dir() + file_name)
+
+    # Check if the file exists and handle exceptions
+    try:
+        file_exists = full_path.is_file()
+    except Exception as e:
+        print(f"An error occurred while checking the file: {e}")
+        file_exists = False
+
+    return file_exists, full_path
+def save_to_cache(cache_file,data) -> None:
+        """Save the data to the cache file in JSON format."""
+        with open(cache_file, 'w') as f:
+            json.dump(data, f, indent=4)  # Pretty-print with indentation
+
+def load_from_cache(cache_file) -> Any:
+    """Load the data from the cache file."""
+    with open(cache_file, 'r') as f:
+        return json.load(f)
+
