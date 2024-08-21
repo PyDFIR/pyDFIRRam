@@ -54,19 +54,23 @@ markdown_extensions:
 
 nav:
   - index.md
-  - explanation.md
-  - Usage:
-    - Installation : Usage/installation.md
-    - Windows : Usage/windows.md
-    - Linux/Mac : Usage/linux.md
+  - Tutorials:
+    - Installation : Tutorials/installation.md
+    - Windows : Tutorials/windows.md
+    - Linux/Mac : Tutorials/linux.md
   - Reference:
-      - Index: reference/reference.md
-      - Base: reference/base.md
-      - Handler: reference/handler.md
-      - Renderer: reference/renderer.md
-      - Utils: reference/utils.md
-      - Windows : reference/windows.md
-      - Testing : reference/test.md
+    - Index: reference/reference.md
+    - Base: reference/base.md
+    - Handler: reference/handler.md
+    - Renderer: reference/renderer.md
+    - Utils: reference/utils.md
+    - Windows : reference/windows.md
+    - Testing : reference/test.md
+  - Explanation:
+    - Explanation : explanation/explanation.md
+  - Guide:
+    - Testing : Guide/test.md
+
 
 extra:
   version:
@@ -76,4 +80,4 @@ extra:
       link: https://github.com/PyDFIR/pyDFIRRam
       name: Github
     - icon: material/email
-      link: "mailto:alexis.debrito@ecole2600.com"
+      link: "mailto:alexis.debrito@pm.me"
