@@ -68,8 +68,8 @@ nav:
     - Testing : reference/test.md
   - Explanation:
     - Explanation : explanation/explanation.md
-  - Guide:
-    - How-to Guide: guide/guide.md
+  - Guides:
+    - Index: guide/guide.md
     - Testing : guide/test.md
 
 
