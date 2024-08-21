@@ -136,7 +136,6 @@ class TreeGrid_to_json(V3CLIRenderer):  # type: ignore
                 function=visitor,
                 initial_accumulator=final_output,
             )
-        print(path)
         data = {"data": final_output[1]}
         save_to_cache(path,data)
         return data

@@ -77,7 +77,7 @@ class Windows(Generic):
     # (todo) : add typing information
     def _set_argument(self, context, prefix, kwargs):
         for k, v in kwargs.items():
-            print(k,v)
+            #print(k,v)
             context.config[prefix+k] = v
         return context
 
