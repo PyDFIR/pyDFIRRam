@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - dev
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,5 +13,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11
-      - run: pip install mkdocs mkdocs-material mkdocstrings[python] mkdocs-git-revision-date-localized-plugin mkdocs-git-committers-plugin-2
-      - run: mkdocs gh-deploy --force --clean --verbose
+
+      # Install required dependencies
+      - run: pip install mkdocs mkdocs-material mkdocstrings[python] mkdocs-git-revision-date-localized-plugin mkdocs-git-committers-plugin-2 mike
+
+      # Deploy the documentation
+      - name: Deploy documentation
+        run: |
+          BRANCH=$(echo "${GITHUB_REF#refs/heads/}")
+          if [ "$BRANCH" = "main" ]; then
+            mike deploy --update-aliases latest
+          elif [ "$BRANCH" = "dev" ]; then
+            mike deploy dev
+          fi
+          mike deploy --push --clean
