@@ -8,8 +8,8 @@ project documentation as described by Daniele Procida
 in the [Diátaxis documentation framework](https://diataxis.fr/)
 and consists of four separate parts:
 
-1. [Tutorials](./Tutorials/installation.md)
-2. [How-To Guides](./Usage/usage.md)
+1. [Tutorials](./tutorials/installation.md)
+2. [How-To Guides](./Guide/usage.md)
 3. [Reference](./reference/reference.md)
 4. [Explanation](./explanation.md)
 

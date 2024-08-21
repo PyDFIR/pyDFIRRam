@@ -55,9 +55,9 @@ markdown_extensions:
 nav:
   - index.md
   - Tutorials:
-    - Installation : Tutorials/installation.md
-    - Windows : Tutorials/windows.md
-    - Linux/Mac : Tutorials/linux.md
+    - Installation : tutorials/installation.md
+    - Windows : tutorials/windows.md
+    - Linux/Mac : tutorials/linux.md
   - Reference:
     - Index: reference/reference.md
     - Base: reference/base.md
@@ -69,7 +69,7 @@ nav:
   - Explanation:
     - Explanation : explanation/explanation.md
   - Guide:
-    - Testing : Guide/test.md
+    - Testing : guide/guide.md
 
 
 extra:
