@@ -38,7 +38,7 @@ def get_hash(path: Path) -> str:
         return hash_obj.hexdigest()
 import os
 import json
-
+import hashlib
 def get_default_cache_dir() -> str:
         """Détermine l'emplacement par défaut du cache selon le système d'exploitation."""
         if os.name == 'nt':  # Windows
@@ -61,6 +61,7 @@ def exist_in_cache(hash: str, plugin_name: str, kwargs: dict[str, Any] | None = 
     # Generate the cache file name
     arguments = ''.join(f'{key}{value}' for key, value in (kwargs or {}).items())
     file_name = f"/{hash}{plugin_name}{arguments}"
+    file_name = hashlib.md5(file_name.encode()).hexdigest()
     full_path = Path(get_default_cache_dir() + file_name)
 
     # Check if the file exists and handle exceptions

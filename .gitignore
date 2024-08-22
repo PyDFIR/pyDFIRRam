@@ -116,5 +116,5 @@ cython_debug/
 
 # Local Dev
 main.py
-
+*.dmp
 tests/config.py
