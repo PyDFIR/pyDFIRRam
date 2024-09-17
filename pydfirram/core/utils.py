@@ -5,11 +5,12 @@ Functions:
     get_hash(path: Path) -> str: Calculates and returns the SHA-256 hash of the specified file.
 """
 
+import os
 import hashlib
-
+import pickle
+from typing import Any, Dict, Tuple, Optional
 from pathlib import Path
-from typing import Any, Tuple
-
+import mmap
 
 def get_hash(path: Path) -> str:
     """
@@ -36,35 +37,37 @@ def get_hash(path: Path) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_obj.update(chunk)
         return hash_obj.hexdigest()
-import os
-import json
-import hashlib
-def get_default_cache_dir() -> str:
-        """Détermine l'emplacement par défaut du cache selon le système d'exploitation."""
-        if os.name == 'nt':  # Windows
-            return os.path.join(os.getenv('LOCALAPPDATA'), 'my_volatility_wrapper', 'cache')
-        elif os.name == 'posix':  # Linux/MacOS
-            return os.path.expanduser('~/.cache/my_volatility_wrapper')
-        else:
-            raise NotImplementedError(f"Unsupported OS: {os.name}")
-    
-def exist_in_cache(hash: str, plugin_name: str, kwargs: dict[str, Any] | None = None) -> Tuple[bool, Path]:
-    """
-    Check if a cache file exists based on the hash, plugin name, and kwargs.
 
-    :param hash: The hash value to be used in the cache file path.
-    :param plugin_name: The name of the plugin used in the cache file path.
-    :param kwargs: Optional keyword arguments to be included in the cache file path.
-    :return: A tuple where the first element is a boolean indicating if the cache file exists,
-             and the second element is the Path object of the cache file.
+def get_default_cache_dir() -> str:
     """
-    # Generate the cache file name
+    Determines the default cache directory based on the operating system.
+
+    :return: The path to the default cache directory as a string.
+    :raises NotImplementedError: If the operating system is unsupported.
+    """
+    if os.name == 'nt':  # Windows
+        return os.path.join(os.getenv('LOCALAPPDATA'), 'my_volatility_wrapper', 'cache')
+    elif os.name == 'posix':  # Linux/MacOS
+        return os.path.expanduser('~/.cache/my_volatility_wrapper')
+    else:
+        raise NotImplementedError(f"Unsupported OS: {os.name}")
+
+
+def exist_in_cache(hash: str, plugin_name: str, kwargs: Optional[Dict[str, Any]] = None) -> Tuple[bool, Path]:
+    """
+    Check if a cache file exists based on the hash, plugin name, and optional keyword arguments.
+
+    :param hash: The hash value to use in the cache file path.
+    :param plugin_name: The name of the plugin used in the cache file path.
+    :param kwargs: Optional dictionary of keyword arguments to be included in the cache file path.
+    :return: A tuple containing a boolean indicating whether the cache file exists, 
+             and the Path object representing the cache file location.
+    """
     arguments = ''.join(f'{key}{value}' for key, value in (kwargs or {}).items())
     file_name = f"/{hash}{plugin_name}{arguments}"
     file_name = hashlib.md5(file_name.encode()).hexdigest()
-    full_path = Path(get_default_cache_dir() + file_name)
+    full_path = Path(get_default_cache_dir()) / file_name
 
-    # Check if the file exists and handle exceptions
     try:
         file_exists = full_path.is_file()
     except Exception as e:
@@ -72,13 +75,30 @@ def exist_in_cache(hash: str, plugin_name: str, kwargs: dict[str, Any] | None = 
         file_exists = False
 
     return file_exists, full_path
-def save_to_cache(cache_file,data) -> None:
-        """Save the data to the cache file in JSON format."""
-        with open(cache_file, 'w') as f:
-            json.dump(data, f, indent=4)  # Pretty-print with indentation
 
-def load_from_cache(cache_file) -> Any:
-    """Load the data from the cache file."""
-    with open(cache_file, 'r') as f:
-        return json.load(f)
+def save_to_cache(cache_file: Path, data: Any) -> None:
+    """
+    Save the provided data to the specified cache file using Pickle for faster serialization.
+    If the file or its parent directory does not exist, it will create them.
 
+    :param cache_file: The file path where the data should be saved.
+    :param data: The data to be saved.
+    """
+    # Ensure the directory exists before saving
+    cache_file.parent.mkdir(parents=True, exist_ok=True)  # Create parent directories if they don't exist
+
+    # Use pickle to serialize the data in binary format
+    with cache_file.open('wb') as f:
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)  # Faster binary serialization
+
+def load_from_cache(cache_file: Path) -> Any:
+    """
+    Load data from the specified cache file using memory-mapped I/O for faster access.
+
+    :param cache_file: The file path from which data should be loaded.
+    :return: The loaded data.
+    """
+    # Use mmap for fast reading of the file
+    with cache_file.open('rb') as f:
+        with mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ) as mm:
+            return pickle.loads(mm)  # Deserialize using Pickle
