@@ -7,24 +7,25 @@ specific OS and run them with the required arguments.
 Classes:
     Windows
 
-Example:
-    The module can be used as follows:
+Example (API recommandée) :
 
         $ python3
         >>> from pydfirram.modules.windows import Windows
         >>> from pathlib import Path
         >>> dumpfile = Path("tests/data/dump.raw")
-        >>> generic = Windows(dumpfile)
-        >>> plugin = generic.pslist().to_list()
+        >>> windows = Windows(dumpfile)
+        >>> windows.run_plugin(\"windows.pslist\").to_df()
 
-    OR :
-        $ python3
-        >>> from pydfirram.modules.windows import Windows
-        >>> from pathlib import Path
-        >>> dumpfile = Path("tests/data/dump.raw")
-        >>> generic = Windows(dumpfile)
-        >>> plugin = generic.pslist(pid=[4]).to_df()
-        >>> print(plugin)
+    Migration depuis l\'API dynamique :
+        **Avant** : ``windows.pslist().to_df()``
+        **Après** : ``windows.run_plugin(\"windows.pslist\").to_df()``
+
+        L\'accès par attribut conserve le même comportement mais émet un
+        :exc:`DeprecationWarning` et doit être évité dans le code pérenne vers un SDK stable.
+
+Legacy / compatibilité :
+
+        >>> windows.pslist(pid=[...]).to_list()
 """
 from __future__ import annotations
 
@@ -35,7 +36,6 @@ from pathlib import Path
 from pydfirram.core.handler import OutputCollisionPolicy
 
 from pydfirram.core.base import Generic, OperatingSystem
-from pydfirram.core.renderer import Renderer
 from pydfirram.core.runtime import ExecutionRuntime
 
 
@@ -145,5 +145,4 @@ class Windows(Generic):
             --------
             None
             """
-        plugin = self.get_plugin("dumpfiles")
-        Renderer(self.run_plugin(plugin, timeout=timeout, **_kwargs)).file_render()
+        self.run_plugin("dumpfiles", timeout=timeout, **_kwargs).file_render()

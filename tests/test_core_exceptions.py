@@ -3,25 +3,36 @@ from pathlib import Path
 import pytest
 
 import pydfirram.core.base as base_module
-from pydfirram.core.base import Context, Generic, OperatingSystem, PluginEntry, PluginType
+from pydfirram.core.base import (
+    Context,
+    Generic,
+    OperatingSystem,
+    PluginEntry,
+    PluginRegistry,
+    PluginType,
+)
 from pydfirram.core.exceptions import (
     InvalidPluginArgumentError,
     OutputHandlingError,
-    PluginExecutionError,
     PluginNotFoundError,
     PluginTimeoutError,
-    VolatilityContextError,
 )
 from pydfirram.core.handler import create_file_handler
 from pydfirram.core.renderer import Renderer, TreeGrid_to_json
 
 
-def _build_generic(tmp_path: Path) -> Generic:
+def _build_generic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generic:
+    PluginRegistry.clear_cache()
+
+    def _empty_registry(klass: type[PluginRegistry], operating_system: OperatingSystem) -> PluginRegistry:
+        return PluginRegistry(operating_system, ())
+
+    monkeypatch.setattr(PluginRegistry, "for_platform", classmethod(_empty_registry))
+
     generic = Generic.__new__(Generic)
     generic.os = OperatingSystem.WINDOWS
     generic.dump_file = tmp_path / "dump.raw"
     generic.dump_file.write_bytes(b"dump")
-    generic.plugins = []
     generic.context = None
     generic.timeout = None
     generic.workspace_base = None
@@ -32,27 +43,28 @@ def _build_generic(tmp_path: Path) -> Generic:
     return generic
 
 
-def test_get_plugin_raises_plugin_not_found_error(tmp_path: Path) -> None:
-    generic = _build_generic(tmp_path)
+def test_get_plugin_raises_plugin_not_found_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    generic = _build_generic(tmp_path, monkeypatch)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(PluginNotFoundError):
         generic.get_plugin("missing_plugin")
 
 
-def test_getattr_wraps_missing_plugin_with_chaining(tmp_path: Path) -> None:
-    generic = _build_generic(tmp_path)
+def test_getattr_wraps_missing_plugin_with_chaining(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    generic = _build_generic(tmp_path, monkeypatch)
 
-    with pytest.raises(ValueError) as exc_info:
-        generic.__getattr__("missing_plugin")
+    with pytest.warns(DeprecationWarning):
+        with pytest.raises(ValueError) as exc_info:
+            generic.__getattr__("missing_plugin")
 
-    assert isinstance(exc_info.value.__cause__, ValueError)
+    assert isinstance(exc_info.value.__cause__, PluginNotFoundError)
 
 
 def test_run_plugin_raises_timeout_error_with_cause(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    generic = _build_generic(tmp_path)
+    generic = _build_generic(tmp_path, monkeypatch)
     plugin = PluginEntry(PluginType.GENERIC, "pslist", object)  # type: ignore[arg-type]
 
     class FakeContext:
@@ -85,7 +97,7 @@ def test_run_plugin_raises_invalid_argument_error_with_cause(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    generic = _build_generic(tmp_path)
+    generic = _build_generic(tmp_path, monkeypatch)
     plugin = PluginEntry(PluginType.GENERIC, "pslist", object)  # type: ignore[arg-type]
 
     class FakeContext:
@@ -118,7 +130,7 @@ def test_run_plugin_raises_execution_error_with_cause(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    generic = _build_generic(tmp_path)
+    generic = _build_generic(tmp_path, monkeypatch)
     plugin = PluginEntry(PluginType.GENERIC, "pslist", object)  # type: ignore[arg-type]
 
     class FakeContext:

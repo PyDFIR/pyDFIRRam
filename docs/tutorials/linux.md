@@ -37,20 +37,28 @@
      generic = Generic(os, dumpfile)
      ```
 
-4. **Listing Available Functions**:
-   - To list all available Volatility plugins:
+4. **Listing and inspecting plugins**:
+   - Qualified names and metadata (cached per Volatility version and OS):
+     ```python
+     generic.list_plugins()                    # or list_plugins(os_filter=OperatingSystem.LINUX)
+     generic.has_plugin("linux.pslist")
+     generic.plugin_info("pslist")
+     ```
+   - Legacy list of `PluginEntry` objects:
      ```python
      generic.get_all_plugins()
      ```
+   - See **[Plugins (SDK API)](plugins-sdk.md)** for cache details and migration.
 
-5. **Using Plugins**:
-   - Refer to Volatility plugin documentation for parameters. Example using `pslist` plugin:
+5. **Running plugins**:
+   - Use `run_plugin` with the **qualified** Volatility name for your OS; it returns a [`Renderer`](../reference/renderer.md):
      ```python
-     generic.pslist(pid=[4]).to_list()
+     generic.run_plugin("linux.pslist", pid=[4]).to_list()
      ```
+   - Refer to Volatility plugin documentation for parameter names and types.
 
-6. **Formatting Output**:
-   - The return from Volatility functions provides a `Rendering` class, allowing customization of output format.
+6. **Legacy behaviour**:
+   - Attribute-style access (`generic.pslist(...)`) still works but emits a **`DeprecationWarning`**. Prefer `run_plugin("linux.pslist", ...)` (or the correct qualified name on your image).
 
 ### Notes
 
