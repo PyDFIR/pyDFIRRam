@@ -23,17 +23,21 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 volatility3 = "^2.5.2"
-pandas = "^2.2.2"
+pandas = { version = "^2.2.2", optional = true }
 regex = "^2024.4.28"
 loguru = "^0.7.2"
 jupyter = { version = "^1.0.0", optional = true }
 graphviz = { version = "^0.20.3", optional = true }
+pyarrow = { version = ">=15,<19", optional = true }
 
 [tool.poetry.extras]
 jupyter = ["jupyter"]
 viz = ["graphviz"]
+pandas = ["pandas"]
+parquet = ["pandas", "pyarrow"]
 
 [tool.poetry.group.dev.dependencies]
+pandas = "^2.2.2"
 pytest = "^7.2"
 pytest-cov = "^5.0"
 tox = "^4.15"

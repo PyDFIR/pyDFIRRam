@@ -24,7 +24,12 @@ Le paquet s’installe avec `pip` ou [Poetry](https://python-poetry.org/).
 
 ```bash
 pip install pydfirram
+
+# analyse tabulaire (DataFrame). Recommandé avec les exemples notebooks.
+pip install "pydfirram[pandas]"
 ```
+
+Pour l’export **Parquet** optionnel : `pip install "pydfirram[parquet]"` (installe aussi pandas et pyarrow).
 
 Outils optionnels (notebooks, dépendance `graphviz` Python ; le binaire système `dot` reste requis pour un rendu graphique) :
 
@@ -35,8 +40,8 @@ pip install "pydfirram[jupyter,viz]"
 Avec Poetry, depuis le dépôt cloné :
 
 ```bash
-poetry install
-poetry install --extras jupyter --extras viz
+poetry install --with dev
+poetry install --extras pandas --extras jupyter --extras viz
 ```
 
 ## Tests

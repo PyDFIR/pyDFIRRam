@@ -19,6 +19,7 @@ from pydfirram.core.exceptions import (
 )
 from pydfirram.core.handler import create_file_handler
 from pydfirram.core.renderer import Renderer, TreeGrid_to_json
+from pydfirram.core.runtime import default_execution_runtime
 
 
 def _build_generic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generic:
@@ -40,6 +41,7 @@ def _build_generic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generic:
     generic.manifest_include_dump_sha256 = False
     generic._run_manifest = None
     generic._artifact_manager = None
+    generic.execution_runtime = default_execution_runtime()
     return generic
 
 

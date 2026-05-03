@@ -21,8 +21,7 @@ jobs:
       - name: Install project and pytest
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pytest-cov
-          python -m pip install .
+          python -m pip install pytest pytest-cov '.[pandas,parquet]'
 
       - name: Run pytest
         run: |
