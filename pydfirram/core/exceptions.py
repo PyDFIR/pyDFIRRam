@@ -1,5 +1,10 @@
 """Custom exceptions used across pyDFIRRam."""
 
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Literal, Optional
+
 
 class PyDFIRRamError(Exception):
     """Base exception for all pyDFIRRam user-facing errors."""
@@ -12,9 +17,35 @@ class PluginNotFoundError(PyDFIRRamError):
 class PluginExecutionError(PyDFIRRamError):
     """Raised when a plugin fails during execution."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        subprocess_exit_code: Optional[int] = None,
+        stderr_log_path: Optional[Path] = None,
+    ) -> None:
+        super().__init__(message)
+        self.subprocess_exit_code = subprocess_exit_code
+        self.stderr_log_path = stderr_log_path
+
 
 class PluginTimeoutError(PluginExecutionError):
-    """Raised when a plugin does not complete before timeout."""
+    """Raised when a plugin does not complete before deadline."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        timeout_kind: Literal["soft", "hard"] = "soft",
+        subprocess_exit_code: Optional[int] = None,
+        stderr_log_path: Optional[Path] = None,
+    ) -> None:
+        super().__init__(
+            message,
+            subprocess_exit_code=subprocess_exit_code,
+            stderr_log_path=stderr_log_path,
+        )
+        self.timeout_kind = timeout_kind
 
 
 class InvalidPluginArgumentError(PyDFIRRamError):

@@ -45,8 +45,10 @@ def test_run_plugin_timeout_raises_and_cleans_temp_files(generic_without_plugins
 
     monkeypatch.setattr(generic, "_build_runable_context", fake_build)
 
-    with pytest.raises(PluginTimeoutError):
+    with pytest.raises(PluginTimeoutError) as exc:
         generic.run_plugin(plugin)
+
+    assert exc.value.timeout_kind == "soft"
 
     assert not temp_artifact.exists()
     assert not run_dir.exists()
@@ -87,5 +89,7 @@ def test_run_plugin_per_call_timeout_overrides_default(generic_without_plugins, 
 
     monkeypatch.setattr(generic, "_build_runable_context", fake_build)
 
-    with pytest.raises(PluginTimeoutError):
+    with pytest.raises(PluginTimeoutError) as exc:
         generic.run_plugin(plugin, timeout=0.01)
+
+    assert exc.value.timeout_kind == "soft"

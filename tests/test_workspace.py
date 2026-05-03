@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from pydfirram.core.base import Context, Generic, OperatingSystem, PluginEntry, PluginType
+from pydfirram.core.runtime import InProcessRuntime
 from pydfirram.core.exceptions import (
     ArtifactAlreadyExistsError,
     InvalidPluginArgumentError,
@@ -196,6 +197,7 @@ def test_generic_run_plugin_writes_manifest_on_failure(monkeypatch, tmp_path: Pa
         OperatingSystem.WINDOWS,
         dump,
         workspace_base=tmp_path,
+        execution_runtime=InProcessRuntime(),
     )
 
     with pytest.raises(RuntimeError):

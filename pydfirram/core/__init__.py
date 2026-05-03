@@ -13,6 +13,14 @@ from pydfirram.core.exceptions import (
     VolatilityContextError,
     WorkspaceConflictError,
 )
+from pydfirram.core.runtime import (
+    ExecutionRuntime,
+    InProcessRuntime,
+    PluginInvocation,
+    SubprocessRuntime,
+    default_execution_runtime,
+    recommended_subprocess_runtime,
+)
 from pydfirram.core.workspace import (
     ArtifactManager,
     RunManifest,
@@ -31,6 +39,12 @@ __all__ = [
     "ArtifactAlreadyExistsError",
     "VolatilityContextError",
     "WorkspaceConflictError",
+    "ExecutionRuntime",
+    "InProcessRuntime",
+    "PluginInvocation",
+    "SubprocessRuntime",
+    "default_execution_runtime",
+    "recommended_subprocess_runtime",
     "RunManifest",
     "RunStatus",
     "RunWorkspacePaths",

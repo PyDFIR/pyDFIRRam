@@ -133,6 +133,7 @@ class RunManifest:
     python_version: str
     pydfirram_version: str
     volatility3_version: str
+    timeout_kind: Optional[str] = None
 
     @classmethod
     def start_shell(
@@ -161,6 +162,7 @@ class RunManifest:
             python_version=_python_version(),
             pydfirram_version=_package_version("pydfirram"),
             volatility3_version=_volatility_version(),
+            timeout_kind=None,
         )
 
     def _started_dt(self) -> Optional[datetime]:

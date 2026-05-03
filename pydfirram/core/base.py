@@ -38,8 +38,6 @@ Example:
 
 import os
 import shutil
-import threading
-import time
 import uuid
 from dataclasses import dataclass
 from enum import Enum
@@ -87,8 +85,17 @@ from pydfirram.core.handler import (
 )
 from pydfirram.core.renderer import Renderer
 from pydfirram.core.exceptions import (
+    PluginExecutionError,
     PluginTimeoutError,
     VolatilityContextError,
+)
+from pydfirram.core.runtime import (
+    ExecutionRuntime,
+    PluginInvocation,
+    SubprocessRuntime,
+    SUBPROCESS_JOB_BASENAME,
+    WORKER_RESULT_BASENAME,
+    default_execution_runtime,
 )
 from pydfirram.core.workspace import (
     ArtifactManager,
@@ -96,6 +103,7 @@ from pydfirram.core.workspace import (
     RunStatus,
     RunWorkspacePaths,
     WorkspaceManager,
+    kwargs_to_manifest_dict,
     relativize_existing_files,
     sanitize_run_identifier,
 )
@@ -381,6 +389,7 @@ class Generic():
         workspace_base: Optional[Path] = None,
         output_collision_policy: OutputCollisionPolicy = "fail",
         manifest_include_dump_sha256: bool = False,
+        execution_runtime: Optional[ExecutionRuntime] = None,
     ):
         """Initializes a generic OS.
 
@@ -410,6 +419,9 @@ class Generic():
         self.manifest_include_dump_sha256 = manifest_include_dump_sha256
         self._run_manifest: Optional[RunManifest] = None
         self._artifact_manager: Optional[ArtifactManager] = None
+        self.execution_runtime: ExecutionRuntime = (
+            execution_runtime if execution_runtime is not None else default_execution_runtime()
+        )
 
         logger.info(f"Generic OS initialized: {self.os}")
 
@@ -550,56 +562,6 @@ class Generic():
                     err,
                 )
 
-    def _run_with_timeout(
-        self,
-        run_callable: Callable[[], Any],
-        plugin_name: str,
-        timeout: Optional[float],
-    ) -> Any:
-        """Execute plugin run callable with an optional thread-level timeout."""
-        effective_timeout = self._effective_timeout(timeout)
-        if effective_timeout is None:
-            return run_callable()
-
-        result: dict[str, Any] = {"value": None, "error": None}
-
-        def runner() -> None:
-            try:
-                result["value"] = run_callable()
-            except BaseException as exc:
-                result["error"] = exc
-
-        worker = threading.Thread(
-            target=runner,
-            name=f"volatility-run-{plugin_name}",
-            daemon=True,
-        )
-        started_at = time.monotonic()
-        worker.start()
-        worker.join(timeout=effective_timeout)
-
-        if worker.is_alive():
-            elapsed = time.monotonic() - started_at
-            logger.error(
-                "Volatility plugin '{}' timed out after {:.2f}s (configured timeout: {:.2f}s).",
-                plugin_name,
-                elapsed,
-                effective_timeout,
-            )
-            logger.warning(
-                "Thread-level timeout cannot interrupt underlying Volatility execution immediately. "
-                "A future process-isolated runner should be used for hard kills."
-            )
-            self._cleanup_timeout_artifacts(plugin_name)
-            raise PluginTimeoutError(
-                f"Le plugin '{plugin_name}' a depasse le delai ({effective_timeout:.2f}s)."
-            )
-
-        if result["error"] is not None:
-            raise result["error"]
-
-        return result["value"]
-
     def _build_runable_context(
         self,
         plugin: PluginEntry,
@@ -653,6 +615,36 @@ class Generic():
         )
         manifest.write_json(ws_paths.manifest)
 
+    def _build_worker_job_spec(
+        self,
+        plugin: PluginEntry,
+        plugin_kwargs: dict[str, Any],
+        run_id: str,
+        paths: RunWorkspacePaths,
+        result_path: Path,
+    ) -> dict[str, Any]:
+        if self.workspace_base is None:
+            raise VolatilityContextError("workspace_base requis pour l'execution sous-processus.")
+        return {
+            "workspace_base": self.workspace_base.resolve().as_posix(),
+            "dump_path": self.dump_file.resolve().as_posix(),
+            "operating_system": self.os.value,
+            "plugin_name": plugin.name,
+            "plugin_kwargs": kwargs_to_manifest_dict(plugin_kwargs),
+            "run_id": run_id,
+            "paths": {
+                "root": paths.root.resolve().as_posix(),
+                "manifest": paths.manifest.resolve().as_posix(),
+                "logs": paths.logs.resolve().as_posix(),
+                "tables": paths.tables.resolve().as_posix(),
+                "extracted": paths.extracted.resolve().as_posix(),
+                "tmp": paths.tmp.resolve().as_posix(),
+            },
+            "result_pickle_path": result_path.resolve().as_posix(),
+            "output_collision_policy": self.output_collision_policy,
+            "manifest_include_dump_sha256": self.manifest_include_dump_sha256,
+        }
+
     #---
     # Public methods
     #---
@@ -662,19 +654,17 @@ class Generic():
         self,
         plugin: PluginEntry,
         timeout: Optional[float] = None,
+        *,
+        _reuse_workspace: Optional[tuple[str, RunWorkspacePaths]] = None,
+        _finalize_workspace: bool = True,
         **plugin_kwargs: Any,
     ) -> Any:
-        """Run a volatility3 plugin with the given arguments.
+        """Execute un plugin Volatility3.
 
-        Args:
-            plugin (PluginEntry): The plugin entry.
-            **plugin_kwargs: The keyword arguments.
-
-        Returns:
-            Any: The result of the plugin.
-
-        Raises:
-            ValueError: If the context is not built.
+        Pour un isolat par sous-processus (timeout dur), passer
+        ``execution_runtime=SubprocessRuntime()`` à l'instanciation de
+        :class:`Generic` et définir un ``workspace_base`` : les journaux et le
+        JSON de configuration sont alors conservés sous ``runs/<id>/``.
         """
         self._run_manifest = None
         self._artifact_manager = None
@@ -682,7 +672,21 @@ class Generic():
         tracked_workspace: Optional[RunWorkspacePaths] = None
         tracked_run_uuid: Optional[str] = None
 
-        if self.workspace_base is not None:
+        if isinstance(self.execution_runtime, SubprocessRuntime):
+            if self.workspace_base is None and _reuse_workspace is None:
+                raise PluginExecutionError(
+                    "SubprocessRuntime impose un workspace (workspace_base ou _reuse_workspace) "
+                    "pour pouvoir tracer logs, stderr du worker et le manifest."
+                )
+
+        if _reuse_workspace is not None:
+            tracked_run_uuid, tracked_workspace = _reuse_workspace
+            self._run_manifest = RunManifest.load(tracked_workspace.manifest)
+            self._artifact_manager = ArtifactManager(
+                run_root=tracked_workspace.root,
+                collision_policy=self.output_collision_policy,
+            )
+        elif self.workspace_base is not None:
             workspace_manager = WorkspaceManager(self.workspace_base)
             tracked_run_uuid, tracked_workspace = workspace_manager.create_run_workspace()
             self._run_manifest = RunManifest.start_shell(
@@ -691,6 +695,7 @@ class Generic():
                 dump_path=self.dump_file,
                 kwargs=dict(plugin_kwargs),
             )
+            self._run_manifest.write_json(tracked_workspace.manifest)
             self._artifact_manager = ArtifactManager(
                 run_root=tracked_workspace.root,
                 collision_policy=self.output_collision_policy,
@@ -699,37 +704,95 @@ class Generic():
         exec_status = RunStatus.SUCCESS
         exec_errors: list[str] = []
         result: Optional[Any] = None
+        effective_timeout = self._effective_timeout(timeout)
+
+        subprocess_isolated = (
+            tracked_workspace is not None
+            and isinstance(self.execution_runtime, SubprocessRuntime)
+        )
 
         try:
-            runnable_context = self._build_runable_context(
-                plugin,
-                dict(plugin_kwargs),
-                workspace_paths=tracked_workspace,
-                workspace_run_id=tracked_run_uuid,
-            )
+            if subprocess_isolated:
+                if tracked_workspace is None or tracked_run_uuid is None:
+                    raise VolatilityContextError(
+                        "Chemins workspace incoherents pour SubprocessRuntime."
+                    )
+                job_path = tracked_workspace.tmp / SUBPROCESS_JOB_BASENAME
+                result_path = tracked_workspace.tmp / WORKER_RESULT_BASENAME
+                job_path.unlink(missing_ok=True)
+                result_path.unlink(missing_ok=True)
 
-            if self.context is None:
-                raise VolatilityContextError(
-                    "Le contexte Volatility n'a pas ete construit correctement."
+                invocation = PluginInvocation(
+                    in_process_target=lambda: None,
+                    subprocess_job_payload=self._build_worker_job_spec(
+                        plugin,
+                        dict(plugin_kwargs),
+                        tracked_run_uuid,
+                        tracked_workspace,
+                        result_path,
+                    ),
+                    job_file_path=job_path,
+                    result_pickle_path=result_path,
+                    plugin_name=plugin.name,
+                    stdout_path=tracked_workspace.logs / "executor_stdout.log",
+                    stderr_path=tracked_workspace.logs / "executor_stderr.log",
+                    timeout_cleanup=lambda: self._cleanup_timeout_artifacts(plugin.name),
                 )
 
-            logger.debug(
-                "Running plugin '{}' with timeout={}s and args={}",
-                plugin.name,
-                self._effective_timeout(timeout),
-                list(plugin_kwargs.keys()),
-            )
-            result = self._run_with_timeout(runnable_context.run, plugin.name, timeout)
+                logger.debug(
+                    "Plugin '{}' via SubprocessRuntime (timeout effectif {}s, mode hard si depassement).",
+                    plugin.name,
+                    "sans limite" if effective_timeout is None else effective_timeout,
+                )
+                result = self.execution_runtime.execute(invocation, timeout_s=effective_timeout)
+            else:
+                runnable_context = self._build_runable_context(
+                    plugin,
+                    dict(plugin_kwargs),
+                    workspace_paths=tracked_workspace,
+                    workspace_run_id=tracked_run_uuid,
+                )
+
+                if self.context is None:
+                    raise VolatilityContextError(
+                        "Le contexte Volatility n'a pas ete construit correctement."
+                    )
+
+                logger.debug(
+                    "Running plugin '{}' with timeout={}s (mode soft si thread timeout) args={}",
+                    plugin.name,
+                    effective_timeout,
+                    list(plugin_kwargs.keys()),
+                )
+
+                invocation = PluginInvocation(
+                    in_process_target=runnable_context.run,
+                    subprocess_job_payload=None,
+                    job_file_path=None,
+                    result_pickle_path=None,
+                    plugin_name=plugin.name,
+                    stdout_path=None,
+                    stderr_path=None,
+                    timeout_cleanup=lambda: self._cleanup_timeout_artifacts(plugin.name),
+                )
+                result = self.execution_runtime.execute(invocation, timeout_s=effective_timeout)
+
         except PluginTimeoutError as exc:
             exec_status = RunStatus.TIMEOUT
             exec_errors.append(str(exc))
+            if self._run_manifest is not None:
+                self._run_manifest.timeout_kind = exc.timeout_kind
             raise
         except BaseException as exc:
             exec_status = RunStatus.FAILED
             exec_errors.append(repr(exc))
             raise
         finally:
-            if self.workspace_base is not None and tracked_workspace is not None:
+            if (
+                _finalize_workspace
+                and self.workspace_base is not None
+                and tracked_workspace is not None
+            ):
                 self._finalize_run_workspace(tracked_workspace, exec_status, exec_errors)
 
         return result

@@ -26,13 +26,17 @@ Example:
         >>> plugin = generic.pslist(pid=[4]).to_df()
         >>> print(plugin)
 """
+from __future__ import annotations
+
 from typing import Any, Optional
 
-from pydfirram.core.handler import OutputCollisionPolicy
 from pathlib import Path
+
+from pydfirram.core.handler import OutputCollisionPolicy
 
 from pydfirram.core.base import Generic, OperatingSystem
 from pydfirram.core.renderer import Renderer
+from pydfirram.core.runtime import ExecutionRuntime
 
 
 class Windows(Generic):
@@ -62,6 +66,7 @@ class Windows(Generic):
         workspace_base: Optional[str | Path] = None,
         output_collision_policy: OutputCollisionPolicy = "fail",
         manifest_include_dump_sha256: bool = False,
+        execution_runtime: ExecutionRuntime | None = None,
     ) -> None:
         """
         Initializes the Windows class.
@@ -88,6 +93,7 @@ class Windows(Generic):
             workspace_base=resolved_workspace,
             output_collision_policy=output_collision_policy,
             manifest_include_dump_sha256=manifest_include_dump_sha256,
+            execution_runtime=execution_runtime,
         )
 
     # (todo) : seems to be a boilerplate from `Context`
