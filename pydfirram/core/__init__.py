@@ -11,6 +11,14 @@ from pydfirram.core.exceptions import (
     PluginTimeoutError,
     PyDFIRRamError,
     VolatilityContextError,
+    WorkspaceConflictError,
+)
+from pydfirram.core.workspace import (
+    ArtifactManager,
+    RunManifest,
+    RunStatus,
+    RunWorkspacePaths,
+    WorkspaceManager,
 )
 
 __all__ = [
@@ -22,4 +30,10 @@ __all__ = [
     "OutputHandlingError",
     "ArtifactAlreadyExistsError",
     "VolatilityContextError",
+    "WorkspaceConflictError",
+    "RunManifest",
+    "RunStatus",
+    "RunWorkspacePaths",
+    "WorkspaceManager",
+    "ArtifactManager",
 ]

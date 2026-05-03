@@ -36,6 +36,7 @@ from pydfirram.core.exceptions import (
     InvalidPluginArgumentError,
     OutputHandlingError,
 )
+from pydfirram.core.workspace import sanitize_run_identifier
 
 
 OutputCollisionPolicy = Literal["fail", "unique", "overwrite"]
@@ -76,36 +77,30 @@ def _build_unique_path(path: str) -> str:
     return candidate
 
 
-def _sanitize_run_id(run_id: str) -> str:
-    """Return a safe run identifier for output subdirectories."""
-    candidate = run_id.strip()
-    if not candidate or "/" in candidate or "\\" in candidate:
-        raise InvalidPluginArgumentError(
-            "Identifiant d'execution invalide pour la collecte d'artefacts."
-        )
-    if candidate in {".", ".."}:
-        raise InvalidPluginArgumentError(
-            "Identifiant d'execution invalide pour la collecte d'artefacts."
-        )
-    return re.sub(r"[^A-Za-z0-9._-]", "_", candidate)
-
-
 def create_file_handler(
     output_dir: Optional[str],
     *,
     collision_policy: OutputCollisionPolicy = "fail",
     run_id: Optional[str] = None,
+    use_run_subdirectory: bool = True,
+    temp_parent: Optional[str] = None,
 ) -> type:
     """Create a file handler class that saves files directly to disk.
 
     Args:
-        output_dir (str): The base directory where extracted files should be
-                          saved. A run-specific subdirectory is created below it.
-                          If None, raises a TypeError.
+        output_dir (str): The base directory for extracted artefacts. Unless
+                          ``use_run_subdirectory`` is false, ``<output_dir>/<run_id>/``.
+                          Must be set for all modes.
         collision_policy (OutputCollisionPolicy): Behaviour when target file
                           already exists: "fail" (default), "unique", "overwrite".
-        run_id (str): Optional run identifier. If omitted, a random run id is
-                      generated to isolate extraction runs.
+        run_id (str): Optional identifier used when ``use_run_subdirectory=True``.
+                      If omitted, a random UUID is generated.
+        use_run_subdirectory (bool): When ``True`` (historic default), artefacts
+                                       live directly under ``<output>/<run_id>``.
+                                       When ``False``, ``output_dir`` is treated as the
+                                       final extraction directory without extra nesting.
+        temp_parent (str): Directory for staged ``*.vol3`` temps. Defaults to the
+                           active extraction folder (legacy behaviour matched when nested).
     Returns:
         type: A file handler class that saves files directly to disk.
     """
@@ -115,12 +110,17 @@ def create_file_handler(
             "'fail', 'unique', 'overwrite'."
         )
 
-    effective_run_id = _sanitize_run_id(run_id) if run_id else uuid.uuid4().hex
-    run_output_dir = (
-        os.path.join(output_dir, effective_run_id)
-        if output_dir is not None
-        else None
-    )
+    effective_run_id = sanitize_run_identifier(run_id) if run_id else uuid.uuid4().hex
+    if use_run_subdirectory:
+        run_output_dir = (
+            os.path.join(output_dir, effective_run_id)
+            if output_dir is not None
+            else None
+        )
+    else:
+        run_output_dir = output_dir
+
+    staging_parent = temp_parent if temp_parent is not None else run_output_dir
 
     class CLIFileHandler(V3FileHandlerInterface): # type: ignore
         """The FileHandler from Volatility3 CLI.
@@ -155,11 +155,16 @@ def create_file_handler(
                 raise OutputHandlingError(
                     "Le dossier de sortie n'est pas configure correctement."
                 )
+            if staging_parent is None:
+                raise OutputHandlingError(
+                    "Le repertoire temporaire d'extraction est indetermine."
+                )
             os.makedirs(run_output_dir, exist_ok=True)
+            os.makedirs(staging_parent, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(
                 suffix  = ".vol3",
                 prefix  = "tmp_",
-                dir     = run_output_dir,
+                dir     = staging_parent,
             )
 
             # allow `io.open()` without using `with` context

@@ -39,7 +39,7 @@ def test_run_plugin_timeout_raises_and_cleans_temp_files(generic_without_plugins
             time.sleep(0.2)
             return "never"
 
-    def fake_build(_plugin, _kwargs):
+    def fake_build(_plugin, _kwargs, **_ignored):
         generic.context = SimpleNamespace(run_output_dir=run_dir)
         return SlowRunnable()
 
@@ -61,7 +61,7 @@ def test_run_plugin_propagates_underlying_execution_errors(generic_without_plugi
         def run(self):
             raise RuntimeError("volatility boom")
 
-    def fake_build(_plugin, _kwargs):
+    def fake_build(_plugin, _kwargs, **_ignored):
         generic.context = SimpleNamespace(run_output_dir=tmp_path / "run-ok")
         return FailingRunnable()
 
@@ -81,7 +81,7 @@ def test_run_plugin_per_call_timeout_overrides_default(generic_without_plugins, 
             time.sleep(0.1)
             return "done"
 
-    def fake_build(_plugin, _kwargs):
+    def fake_build(_plugin, _kwargs, **_ignored):
         generic.context = SimpleNamespace(run_output_dir=tmp_path / "run-override")
         return SlowRunnable()
 

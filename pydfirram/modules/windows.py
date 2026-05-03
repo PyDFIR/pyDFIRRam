@@ -27,6 +27,8 @@ Example:
         >>> print(plugin)
 """
 from typing import Any, Optional
+
+from pydfirram.core.handler import OutputCollisionPolicy
 from pathlib import Path
 
 from pydfirram.core.base import Generic, OperatingSystem
@@ -52,7 +54,15 @@ class Windows(Generic):
     __init__(dumpfile)
         Initializes the Windows class with the given dump file.
     """
-    def __init__(self, dumpfile: str|Path, timeout: Optional[float] = None) -> None:
+    def __init__(
+        self,
+        dumpfile: str | Path,
+        timeout: Optional[float] = None,
+        *,
+        workspace_base: Optional[str | Path] = None,
+        output_collision_policy: OutputCollisionPolicy = "fail",
+        manifest_include_dump_sha256: bool = False,
+    ) -> None:
         """
         Initializes the Windows class.
 
@@ -65,13 +75,19 @@ class Windows(Generic):
         --------
         >>> windows = Windows("path/to/dump.raw": Path)
         """
-        if isinstance(dumpfile,str):
+        if isinstance(dumpfile, str):
             dumpfile = Path(dumpfile)
         self.dump_files = dumpfile
+        resolved_workspace = (
+            Path(workspace_base).expanduser().resolve() if workspace_base is not None else None
+        )
         super().__init__(
-            operating_system    = OperatingSystem.WINDOWS,
-            dump_file           = dumpfile,
-            timeout             = timeout,
+            operating_system=OperatingSystem.WINDOWS,
+            dump_file=dumpfile,
+            timeout=timeout,
+            workspace_base=resolved_workspace,
+            output_collision_policy=output_collision_policy,
+            manifest_include_dump_sha256=manifest_include_dump_sha256,
         )
 
     # (todo) : seems to be a boilerplate from `Context`

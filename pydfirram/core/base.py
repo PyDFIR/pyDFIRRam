@@ -81,11 +81,23 @@ from volatility3.framework.automagic.stacker import (       # type: ignore
     choose_os_stackers      as v3_choose_os_stackers,
 )
 
-from pydfirram.core.handler import create_file_handler
+from pydfirram.core.handler import (
+    OutputCollisionPolicy,
+    create_file_handler,
+)
 from pydfirram.core.renderer import Renderer
 from pydfirram.core.exceptions import (
     PluginTimeoutError,
     VolatilityContextError,
+)
+from pydfirram.core.workspace import (
+    ArtifactManager,
+    RunManifest,
+    RunStatus,
+    RunWorkspacePaths,
+    WorkspaceManager,
+    relativize_existing_files,
+    sanitize_run_identifier,
 )
 
 
@@ -171,6 +183,10 @@ class Context():
         dump_file: Path,
         plugin: PluginEntry,
         output_dir: Optional[Path] = None,
+        *,
+        workspace_paths: Optional[RunWorkspacePaths] = None,
+        workspace_run_id: Optional[str] = None,
+        collision_policy: OutputCollisionPolicy = "fail",
     ):
         """Initializes a context.
 
@@ -178,15 +194,32 @@ class Context():
             operating_system (OperatingSystem): The operating system.
             dump_file (Path): The dump file path.
             plugin (PluginEntry): The plugin entry.
+            workspace_paths (RunWorkspacePaths|None): When set, artefacts are
+                        stored under structured ``runs/<run_id>/``. Requires
+                        *workspace_run_id*.
         """
         self.os = operating_system
         self.dump_file = dump_file
         self.context = V3Context()
         self.plugin = plugin
         self.automag: Any = None
-        self.output_dir = output_dir or Path(os.getcwd())
+        self.collision_policy = collision_policy
+        self.workspace_paths = workspace_paths
+        resolved_output = Path(output_dir).expanduser().resolve() if output_dir else Path.cwd().resolve()
+
+        if workspace_paths is not None:
+            if workspace_run_id is None:
+                raise VolatilityContextError(
+                    "workspace_run_id est requis lorsque workspace_paths est fourni."
+                )
+            self.run_id = sanitize_run_identifier(workspace_run_id)
+            self.output_dir = workspace_paths.root
+            self.run_output_dir = workspace_paths.extracted.resolve()
+            return
+
         self.run_id = uuid.uuid4().hex
-        self.run_output_dir = self.output_dir / self.run_id
+        self.output_dir = resolved_output
+        self.run_output_dir = resolved_output / self.run_id
 
     def set_context(self) -> None:
         """ setup the current context """
@@ -209,10 +242,20 @@ class Context():
         """
         plugin = self.plugin.interface
         base_config_path = "plugins"
-        file_handler = create_file_handler(
-            str(self.output_dir),
-            run_id=self.run_id,
-        )
+        if self.workspace_paths is None:
+            file_handler = create_file_handler(
+                str(self.output_dir),
+                collision_policy=self.collision_policy,
+                run_id=self.run_id,
+            )
+        else:
+            file_handler = create_file_handler(
+                str(self.run_output_dir),
+                collision_policy=self.collision_policy,
+                run_id=self.run_id,
+                use_run_subdirectory=False,
+                temp_parent=str(self.workspace_paths.tmp.resolve()),
+            )
         try:
             # Construct the plugin, clever magic figures out how to
             # fulfill each requirement that might not be fulfilled
@@ -334,6 +377,10 @@ class Generic():
         operating_system: OperatingSystem,
         dump_file: Path,
         timeout: Optional[float] = None,
+        *,
+        workspace_base: Optional[Path] = None,
+        output_collision_policy: OutputCollisionPolicy = "fail",
+        manifest_include_dump_sha256: bool = False,
     ):
         """Initializes a generic OS.
 
@@ -342,6 +389,7 @@ class Generic():
         Args:
             operating_system (OperatingSystem): The operating system.
             dump_file (Path): The dump file path.
+            timeout (float|None): Default plugin execution deadline in seconds.
 
         Raises:
             FileNotFoundError: If the dump file does not exist.
@@ -354,6 +402,14 @@ class Generic():
         self.temp_data = None
         self.tmp_plugin: Optional[PluginEntry] = None
         self.timeout = self._validate_timeout(timeout, "timeout")
+
+        resolved_workspace_base = Path(workspace_base).expanduser().resolve() if workspace_base else None
+        self.workspace_base = resolved_workspace_base
+
+        self.output_collision_policy = output_collision_policy
+        self.manifest_include_dump_sha256 = manifest_include_dump_sha256
+        self._run_manifest: Optional[RunManifest] = None
+        self._artifact_manager: Optional[ArtifactManager] = None
 
         logger.info(f"Generic OS initialized: {self.os}")
 
@@ -381,10 +437,10 @@ class Generic():
             plugin: PluginEntry = self.get_plugin(key)
         except Exception as exc:
             raise ValueError(f"Unable to handle {key}") from exc
-        def parse_data_function(**kwargs: dict[str,Any]) -> Renderer:
-            return Renderer(
-                data    = self.run_plugin(plugin,**kwargs)
-            )
+        def parse_data_function(**nested_kwargs: Any) -> Renderer:
+            merged = {**nested_kwargs}
+            return Renderer(data=self.run_plugin(plugin, **merged))
+
         return parse_data_function
 
     #---
@@ -458,35 +514,41 @@ class Generic():
         if self.context is None:
             return
 
-        run_output_dir = self.context.run_output_dir
-        if not run_output_dir.exists():
-            return
+        scan_dirs = [self.context.run_output_dir]
+        wp = getattr(self.context, "workspace_paths", None)
+        if wp is not None:
+            scan_dirs.insert(0, wp.tmp)
 
-        try:
-            temp_files = list(run_output_dir.glob("tmp_*.vol3"))
-            for temp_file in temp_files:
-                try:
-                    temp_file.unlink()
-                except FileNotFoundError:
-                    continue
-                except OSError as err:
-                    logger.warning(
-                        "Unable to remove temp file '{}' after timeout of plugin '{}': {}",
-                        temp_file,
-                        plugin_name,
-                        err,
-                    )
+        for run_output_dir in scan_dirs:
+            if not run_output_dir.exists():
+                continue
 
-            remaining = list(run_output_dir.iterdir())
-            if not remaining:
-                shutil.rmtree(run_output_dir, ignore_errors=True)
-        except OSError as err:
-            logger.warning(
-                "Timeout cleanup failed for plugin '{}' in '{}': {}",
-                plugin_name,
-                run_output_dir,
-                err,
-            )
+            try:
+                temp_files = list(run_output_dir.glob("tmp_*.vol3"))
+                for temp_file in temp_files:
+                    try:
+                        temp_file.unlink()
+                    except FileNotFoundError:
+                        continue
+                    except OSError as err:
+                        logger.warning(
+                            "Unable to remove temp file '{}' after timeout of plugin '{}': {}",
+                            temp_file,
+                            plugin_name,
+                            err,
+                        )
+
+                if wp is None and run_output_dir == self.context.run_output_dir:
+                    remaining = list(run_output_dir.iterdir())
+                    if not remaining:
+                        shutil.rmtree(run_output_dir, ignore_errors=True)
+            except OSError as err:
+                logger.warning(
+                    "Timeout cleanup failed for plugin '{}' in '{}': {}",
+                    plugin_name,
+                    run_output_dir,
+                    err,
+                )
 
     def _run_with_timeout(
         self,
@@ -542,15 +604,54 @@ class Generic():
         self,
         plugin: PluginEntry,
         kwargs: dict[str, Any],
+        *,
+        workspace_paths: Optional[RunWorkspacePaths] = None,
+        workspace_run_id: Optional[str] = None,
     ) -> Any:
         """Build and configure runnable Volatility context for a plugin."""
-        self.context = Context(self.os, self.dump_file, plugin) # type: ignore
+        self.context = Context(  # type: ignore[arg-type]
+            self.os,
+            self.dump_file,
+            plugin,
+            workspace_paths=workspace_paths,
+            workspace_run_id=workspace_run_id,
+            collision_policy=self.output_collision_policy,
+        )
         self.context.set_automagic()
         self.context.set_context()
-        builded_context = self.context.build() # type: ignore
+        builded_context = self.context.build()  # type: ignore[assignment]
         if kwargs:
             return self.context.add_arguments(builded_context, kwargs)
         return builded_context
+
+    def _finalize_run_workspace(
+        self,
+        ws_paths: RunWorkspacePaths,
+        status: RunStatus,
+        errors: list[str],
+    ) -> None:
+        manifest = self._run_manifest
+        if manifest is None:
+            return
+        if self.manifest_include_dump_sha256:
+            manifest.compute_dump_sha256()
+
+        artifact_refs: list[str] = []
+        if self._artifact_manager is not None:
+            artifact_refs = self._artifact_manager.outputs()
+
+        discovered = relativize_existing_files(
+            ws_paths.root,
+            (ws_paths.logs, ws_paths.tables, ws_paths.extracted, ws_paths.tmp),
+        )
+        combined = sorted(set(discovered).union(artifact_refs))
+
+        manifest.finalize(
+            status=status,
+            errors=errors or None,
+            output_files=combined if combined else None,
+        )
+        manifest.write_json(ws_paths.manifest)
 
     #---
     # Public methods
@@ -561,13 +662,13 @@ class Generic():
         self,
         plugin: PluginEntry,
         timeout: Optional[float] = None,
-        **kwargs: dict[str,Any],
+        **plugin_kwargs: Any,
     ) -> Any:
         """Run a volatility3 plugin with the given arguments.
 
         Args:
             plugin (PluginEntry): The plugin entry.
-            **kwargs (Any): The keyword arguments.
+            **plugin_kwargs: The keyword arguments.
 
         Returns:
             Any: The result of the plugin.
@@ -575,20 +676,63 @@ class Generic():
         Raises:
             ValueError: If the context is not built.
         """
-        runable_context = self._build_runable_context(plugin, kwargs)
+        self._run_manifest = None
+        self._artifact_manager = None
 
-        if self.context is None:
-            raise VolatilityContextError(
-                "Le contexte Volatility n'a pas ete construit correctement."
+        tracked_workspace: Optional[RunWorkspacePaths] = None
+        tracked_run_uuid: Optional[str] = None
+
+        if self.workspace_base is not None:
+            workspace_manager = WorkspaceManager(self.workspace_base)
+            tracked_run_uuid, tracked_workspace = workspace_manager.create_run_workspace()
+            self._run_manifest = RunManifest.start_shell(
+                run_id=tracked_run_uuid,
+                plugin_name=plugin.name,
+                dump_path=self.dump_file,
+                kwargs=dict(plugin_kwargs),
+            )
+            self._artifact_manager = ArtifactManager(
+                run_root=tracked_workspace.root,
+                collision_policy=self.output_collision_policy,
             )
 
-        logger.debug(
-            "Running plugin '{}' with timeout={}s and args={}",
-            plugin.name,
-            self._effective_timeout(timeout),
-            list(kwargs.keys()),
-        )
-        return self._run_with_timeout(runable_context.run, plugin.name, timeout)
+        exec_status = RunStatus.SUCCESS
+        exec_errors: list[str] = []
+        result: Optional[Any] = None
+
+        try:
+            runnable_context = self._build_runable_context(
+                plugin,
+                dict(plugin_kwargs),
+                workspace_paths=tracked_workspace,
+                workspace_run_id=tracked_run_uuid,
+            )
+
+            if self.context is None:
+                raise VolatilityContextError(
+                    "Le contexte Volatility n'a pas ete construit correctement."
+                )
+
+            logger.debug(
+                "Running plugin '{}' with timeout={}s and args={}",
+                plugin.name,
+                self._effective_timeout(timeout),
+                list(plugin_kwargs.keys()),
+            )
+            result = self._run_with_timeout(runnable_context.run, plugin.name, timeout)
+        except PluginTimeoutError as exc:
+            exec_status = RunStatus.TIMEOUT
+            exec_errors.append(str(exc))
+            raise
+        except BaseException as exc:
+            exec_status = RunStatus.FAILED
+            exec_errors.append(repr(exc))
+            raise
+        finally:
+            if self.workspace_base is not None and tracked_workspace is not None:
+                self._finalize_run_workspace(tracked_workspace, exec_status, exec_errors)
+
+        return result
 
     def validate_dump_file(self, dump_file: Path) -> bool:
         """Validate dump file location.

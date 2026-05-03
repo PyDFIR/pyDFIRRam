@@ -31,3 +31,7 @@ class ArtifactAlreadyExistsError(PyDFIRRamError):
 
 class VolatilityContextError(PyDFIRRamError):
     """Raised when volatility context creation or preparation fails."""
+
+
+class WorkspaceConflictError(PyDFIRRamError):
+    """Raised when a filesystem workspace path would clobber existing data."""

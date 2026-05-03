@@ -24,6 +24,11 @@ def _build_generic(tmp_path: Path) -> Generic:
     generic.plugins = []
     generic.context = None
     generic.timeout = None
+    generic.workspace_base = None
+    generic.output_collision_policy = "fail"
+    generic.manifest_include_dump_sha256 = False
+    generic._run_manifest = None
+    generic._artifact_manager = None
     return generic
 
 
