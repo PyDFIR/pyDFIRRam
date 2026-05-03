@@ -8,6 +8,8 @@ Classes:
     OperatingSystem
     PluginType
     PluginEntry
+    PluginDescriptor
+    PluginRegistry
     Context
     Generic
 
@@ -20,20 +22,17 @@ Example:
         >>> os = OperatingSystem.WINDOWS
         >>> dumpfile = Path("tests/data/dump.raw")
         >>> generic = Generic(os, dumpfile)
-        >>> plugin = generic.get_plugin("Banners")
-        >>> generic.run_plugin(plugin)
+        >>> renderer = generic.run_plugin("windows.pslist")
+        >>> # renderer.to_df()
 
-Example:
-    Or it can be used as follow :
+Example (API explicite, recommandée) :
 
-        $ python3
-        >>> from pydfirram.core.base import Generic, OperatingSystem
-        >>> from pathlib import Path
-        >>> os = OperatingSystem.WINDOWS
-        >>> dumpfile = Path("tests/data/dump.raw")
-        >>> generic = Generic(dumpfile)
-        >>> plugin = generic.pslist().to_df()
-        >>> print(plugin)
+        >>> generic = Generic(os, dumpfile)
+        >>> generic.run_plugin("windows.pslist").to_df()
+
+    Compatibilité : l\'accès par attribut (``generic.pslist()``) reste disponible mais
+    émet une :exc:`DeprecationWarning`. Voir aussi :meth:`Generic.run_plugin` et
+    :meth:`Generic.list_plugins`.
 """
 
 import os
@@ -41,6 +40,7 @@ import shutil
 import threading
 import time
 import uuid
+import warnings
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -87,6 +87,7 @@ from pydfirram.core.handler import (
 )
 from pydfirram.core.renderer import Renderer
 from pydfirram.core.exceptions import (
+    PluginNotFoundError,
     PluginTimeoutError,
     VolatilityContextError,
 )
@@ -96,6 +97,7 @@ from pydfirram.core.workspace import (
     RunStatus,
     RunWorkspacePaths,
     WorkspaceManager,
+    _volatility_version,
     relativize_existing_files,
     sanitize_run_identifier,
 )
@@ -156,6 +158,142 @@ class PluginEntry():
     def __repr__(self) -> str:
         """Returns a string representation of the plugin entry."""
         return f"PluginEntry({self.type}, {self.name}, {self.interface})"
+
+
+@dataclass(frozen=True)
+class PluginDescriptor:
+    """Métadonnées stables pour un plugin Volatility3 (nom complètement qualifié + entrée runtime).
+
+    Le nom court (suffixe après le dernier ``.``) reste utilisé comme :attr:`PluginEntry.name`
+    pour la compatibilité avec l\'API historique (:meth:`Generic.get_plugin`).
+    """
+
+    fq_name: str
+    type: PluginType
+    interface: V3PluginInterface
+
+    @property
+    def name(self) -> str:
+        """Nom court utilisé comme clé dynamique ``windows.pslist`` → ``pslist``."""
+        return self.fq_name.split(".")[-1].lower()
+
+    def as_plugin_entry(self) -> PluginEntry:
+        """Construit l\'entrée attendue par :meth:`Generic.run_plugin` / le contexte Volatility3."""
+        return PluginEntry(self.type, self.name, self.interface)
+
+
+class PluginRegistry:
+    """Registre des plugins Volatility3 visibles pour un OS, mis en cache par version Volatility3.
+
+    La découverte (import + ``list_plugins``) n\'est exécutée qu\'une fois par couple
+    ``(version_volatility, operating_system)`` tant que le cache n\'est pas invalidé.
+    """
+
+    _cache: dict[tuple[str, str], PluginRegistry] = {}
+    _lock = threading.Lock()
+
+    def __init__(
+        self,
+        operating_system: OperatingSystem,
+        descriptors: tuple[PluginDescriptor, ...],
+    ) -> None:
+        self._operating_system = operating_system
+        self._descriptors = descriptors
+        self._entries: tuple[PluginEntry, ...] = tuple(
+            d.as_plugin_entry() for d in descriptors
+        )
+
+    @property
+    def operating_system(self) -> OperatingSystem:
+        return self._operating_system
+
+    @property
+    def descriptors(self) -> tuple[PluginDescriptor, ...]:
+        return self._descriptors
+
+    def to_plugin_entries(self) -> list[PluginEntry]:
+        return list(self._entries)
+
+    def list_fq_names(self) -> list[str]:
+        """Noms plugins tels que retournés par Volatility (ex. ``windows.pslist``)."""
+        return sorted(d.fq_name for d in self._descriptors)
+
+    def resolve(self, name: str) -> PluginDescriptor:
+        """Résout par nom court ou par nom qualifié (comparaison insensible à la casse)."""
+        key = name.strip()
+        lower = key.lower()
+        if not lower:
+            raise PluginNotFoundError("Nom de plugin vide.")
+        if "." in lower:
+            for d in self._descriptors:
+                if d.fq_name.lower() == lower:
+                    return d
+            raise PluginNotFoundError(
+                f"Plugin '{name}' introuvable pour {self._operating_system.value}.",
+            )
+
+        matches = [d for d in self._descriptors if d.name == lower]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            fqs = ", ".join(sorted(m.fq_name for m in matches))
+            raise PluginNotFoundError(
+                f"Le nom '{name}' est ambigu pour {self._operating_system.value}. "
+                f"Préciser le nom qualifié, par ex. parmi : {fqs}",
+            )
+        raise PluginNotFoundError(f"Plugin '{name}' introuvable pour {self._operating_system.value}.")
+
+    def contains(self, name: str) -> bool:
+        try:
+            self.resolve(name)
+        except PluginNotFoundError:
+            return False
+        return True
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Vide le cache de découverte (tests / rechargement plugins)."""
+        with cls._lock:
+            cls._cache.clear()
+
+    @classmethod
+    def for_platform(cls, operating_system: OperatingSystem) -> PluginRegistry:
+        vol_key = _volatility_version()
+        cache_key = (vol_key, operating_system.value)
+        with cls._lock:
+            existing = cls._cache.get(cache_key)
+            if existing is not None:
+                return existing
+            built = cls._build_for_os(operating_system)
+            cls._cache[cache_key] = built
+            return built
+
+    @staticmethod
+    def _raw_plugin_map() -> dict[str, Any]:
+        failures = v3_framework_import_files(
+            base_module=v3_framework_plugins_mod,
+            ignore_errors=True,
+        )
+        if failures:
+            logger.warning(f"Failed to import some plugins: {failures}")
+        return cast(dict[str, Any], v3_framework_list_plugins())
+
+    @classmethod
+    def _build_for_os(cls, operating_system: OperatingSystem) -> PluginRegistry:
+        plugin_list = cls._raw_plugin_map()
+        parsed: list[PluginDescriptor] = []
+        for fq_name, interface in plugin_list.items():
+            elements = fq_name.split(".")
+            platform = elements[0]
+            if platform not in OperatingSystem.to_list():
+                type_ = PluginType.GENERIC
+            elif platform == operating_system.value:
+                type_ = PluginType.SPECIFIC
+            else:
+                continue
+            parsed.append(PluginDescriptor(fq_name=fq_name, type=type_, interface=interface))
+        logger.info(f"Found {len(parsed)} plugins for {operating_system}")
+        return PluginRegistry(operating_system, tuple(parsed))
 
 
 class Context():
@@ -363,9 +501,11 @@ class Generic():
 
     Attributes:
         os (OperatingSystem): The operating system.
-        plugins (List[PluginEntry]): The list of plugins.
         dump_file (Path): The dump file path.
         context (Context): The context.
+
+    Les plugins disponibles sont découverts via :class:`PluginRegistry` (cache par version
+    Volatility3) ; :attr:`plugins` est une propriété lecture seule.
     """
 
     #---
@@ -384,7 +524,8 @@ class Generic():
     ):
         """Initializes a generic OS.
 
-        Automatically get all available Volatility3 plugins for the OS.
+        Les plugins sont chargés depuis le cache Volatility3 à la première lecture
+        de :attr:`plugins`, :meth:`get_plugin`, etc.
 
         Args:
             operating_system (OperatingSystem): The operating system.
@@ -396,7 +537,6 @@ class Generic():
         """
         self.validate_dump_file(dump_file)
         self.os = operating_system
-        self.plugins: list[PluginEntry] = self.get_all_plugins()
         self.dump_file = dump_file
         self.context: Optional[Context] = None
         self.temp_data = None
@@ -413,33 +553,40 @@ class Generic():
 
         logger.info(f"Generic OS initialized: {self.os}")
 
+    @property
+    def plugins(self) -> list[PluginEntry]:
+        """Entrées plugins pour cet OS (:class:`PluginRegistry` mis en cache)."""
+        return self.get_all_plugins()
+
     def __getattr__(
         self,
         key: str,
         **kwargs: dict[str, Any]
-    ) -> Callable[...,Renderer]:
+    ) -> Callable[..., Renderer]:
         """
-        Handle attribute access for commands.
+        Compatibilité : accès dynamique au style ``instance.pslist()``.
 
-        This method is called when an attribute that
-        matches a command name is accessed. It returns a lambda function
-        that calls the __run_commands method with the corresponding key.
+        Préférer :meth:`run_plugin` avec un nom qualifié (ex. ``"windows.pslist"``).
 
-        :param key: The attribute name (command name).
-        :type key: str
-        :param args: Positional arguments for the method call.
-        :param kwargs: Keyword arguments for the method call.
-        :return: A class of Renderer that is the result of a lambda
-        function that executes the __run_commands method for the given key.
+        Déprécié depuis la couche registre : émet une :exc:`DeprecationWarning`.
         """
-        key = key.lower()
+        if key.startswith("_"):
+            raise AttributeError(key)
+        warnings.warn(
+            "Accès dynamique aux plugins déprécié (ex. obj.pslist()) ; utilisez "
+            "obj.run_plugin(\"windows.pslist\", ...). Voir Generic.run_plugin et la doc du module.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        key_lc = key.lower()
         try:
-            plugin: PluginEntry = self.get_plugin(key)
-        except Exception as exc:
-            raise ValueError(f"Unable to handle {key}") from exc
+            plugin_entry: PluginEntry = self.get_plugin(key_lc)
+        except PluginNotFoundError as exc:
+            raise ValueError(f"Unable to handle {key_lc}") from exc
+
         def parse_data_function(**nested_kwargs: Any) -> Renderer:
             merged = {**nested_kwargs}
-            return Renderer(data=self.run_plugin(plugin, **merged))
+            return self.run_plugin(plugin_entry, **merged)
 
         return parse_data_function
 
@@ -447,53 +594,17 @@ class Generic():
     # Internals methods
     #---
 
-    def _get_plugins_list(self) -> dict[str,Any]:
-        """Get a list of available volatility3 plugins for the OS.
+    def _registry(self) -> PluginRegistry:
+        return PluginRegistry.for_platform(self.os)
 
-        Returns:
-            dict[str,Any]: A dictionary of plugins.
-        """
-        failures = v3_framework_import_files(
-            base_module     = v3_framework_plugins_mod,
-            ignore_errors   = True
-        )
-        if failures:
-            logger.warning(f"Failed to import some plugins: {failures}")
-        return cast(dict[str,Any], v3_framework_list_plugins())
-
-    def _parse_plugins_list(
-        self,
-        plugin_list: dict[str, Any],
-    ) -> list[PluginEntry]:
-        """Parse the list of available volatility3 plugins.
-
-        The plugin list is a dictionary where the key is the plugin name
-        and the value is the plugin interface.
-
-        Args:
-            plugin_list (Dict[str, Any]): The plugin list.
-
-        Returns:
-            List[PluginEntry]: A list of PluginEntry.
-        """
-        parsed: list[PluginEntry] = []
-        for plugin in plugin_list:
-            interface = plugin_list[plugin]
-            elements = plugin.split(".")
-            platform = elements[0]
-            name = elements[-1]
-            name = name.lower()
-            if platform not in OperatingSystem.to_list():
-                type_ = PluginType.GENERIC
-            elif platform == self.os.value:
-                type_ = PluginType.SPECIFIC
-            else:
-                continue
-            parsed.append(
-                PluginEntry(type_, name, interface),
-            )
-        logger.info(f"Found {len(parsed)} plugins for {self.os}")
-        return parsed
+    def _coerce_to_plugin_entry(
+        self, plugin: str | PluginEntry | PluginDescriptor
+    ) -> PluginEntry:
+        if isinstance(plugin, PluginEntry):
+            return plugin
+        if isinstance(plugin, PluginDescriptor):
+            return plugin.as_plugin_entry()
+        return self.get_plugin(plugin)
 
     def _validate_timeout(self, timeout: Optional[float], field_name: str) -> Optional[float]:
         """Validate timeout values for plugin execution."""
@@ -660,22 +771,28 @@ class Generic():
     # (todo) : more explicit return type
     def run_plugin(
         self,
-        plugin: PluginEntry,
+        plugin: str | PluginEntry | PluginDescriptor,
         timeout: Optional[float] = None,
         **plugin_kwargs: Any,
-    ) -> Any:
-        """Run a volatility3 plugin with the given arguments.
+    ) -> Renderer:
+        """Exécute un plugin Volatility3 et retourne un :class:`Renderer`.
+
+        Permet la chaîne explicite ``instance.run_plugin(\"windows.pslist\").to_df()``.
 
         Args:
-            plugin (PluginEntry): The plugin entry.
-            **plugin_kwargs: The keyword arguments.
+            plugin: Nom qualifié (ex. ``\"windows.pslist\"``), nom court (ex. ``\"pslist\"``),
+                    :class:`PluginEntry` ou :class:`PluginDescriptor`.
+            timeout: Éventuel délai d\'exécution (secondes).
+            **plugin_kwargs: Arguments transmis au contexte/config du plugin.
 
         Returns:
-            Any: The result of the plugin.
+            :class:`Renderer` enveloppant le résultat Volatility brut (``renderer.data``).
 
         Raises:
-            ValueError: If the context is not built.
+            PluginNotFoundError: Si aucun plugin ne correspond.
+            VolatilityContextError: Si le contexte n\'a pas été construit.
         """
+        plugin = self._coerce_to_plugin_entry(plugin)
         self._run_manifest = None
         self._artifact_manager = None
 
@@ -732,7 +849,7 @@ class Generic():
             if self.workspace_base is not None and tracked_workspace is not None:
                 self._finalize_run_workspace(tracked_workspace, exec_status, exec_errors)
 
-        return result
+        return Renderer(data=result)
 
     def validate_dump_file(self, dump_file: Path) -> bool:
         """Validate dump file location.
@@ -751,33 +868,26 @@ class Generic():
         raise FileNotFoundError(f"The file {dump_file} does not exist.")
 
     def get_plugin(self, name: str) -> PluginEntry:
-        """Fetches a plugin by its name from the list of plugins.
-
-        Args:
-            name (str): The plugin name.
-
-        Returns:
-            PluginEntry: The plugin entry.
+        """Résout un plugin par nom court ou nom qualifié Volatility.
 
         Raises:
-            ValueError: If the plugin is not found.
+            PluginNotFoundError: Si le nom est inconnu ou ambigu (plusieurs fq identiques courts).
         """
-        name = name.lower()
-        for plugin in self.plugins:
-            if plugin.name == name:
-                return plugin
-        raise ValueError(f"Plugin {name} not found for {self.os}")
+        return self._registry().resolve(name).as_plugin_entry()
 
     def get_all_plugins(self) -> list[PluginEntry]:
-        """Get all available plugins for the specified OS.
+        """Liste des entrées disponibles pour l\'OS du wrapper (cache Volatility par version)."""
+        return self._registry().to_plugin_entries()
 
-        Returns:
-            List[PluginEntry]: A list of plugins for the specified OS
-            or all available plugins if the OS is not supported.
+    def list_plugins(self, os_filter: Optional[OperatingSystem] = None) -> list[str]:
+        """Noms qualifiés des plugins disponibles pour un OS (:class:`OperatingSystem`)."""
+        target = os_filter if os_filter is not None else self.os
+        return PluginRegistry.for_platform(target).list_fq_names()
 
-        Raises:
-            ValueError: If the plugin is not found.
-        """
-        plugin_list = self._get_plugins_list()
-        parsed_plugins = self._parse_plugins_list(plugin_list)
-        return parsed_plugins
+    def has_plugin(self, plugin_name: str) -> bool:
+        """Indique si ``plugin_name`` est résoluble (court ou fq) pour l\'OS courant."""
+        return self._registry().contains(plugin_name)
+
+    def plugin_info(self, plugin_name: str) -> PluginDescriptor:
+        """Métadonnées :class:`PluginDescriptor` pour un nom court ou qualifié."""
+        return self._registry().resolve(plugin_name)

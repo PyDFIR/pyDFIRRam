@@ -75,7 +75,7 @@ from pydfirram.modules.windows import Windows
 
 dumpfile = Path(DUMP_FILE)
 win = Windows(dumpfile)
-output = win.PsList(pid=[4]).to_df(max_row=True)
+output = win.run_plugin("windows.pslist", pid=[4]).to_df(max_row=True)
 print(output)
 ```
 
@@ -87,12 +87,16 @@ from pydfirram.modules.windows import Windows
 
 dumpfile = Path(DUMP_FILE)
 win = Windows(dumpfile)
-output = win.pslist()
+out = win.run_plugin("windows.pslist")
 
-print(output.to_list())
-print(output.to_df())
-print(win.pslist().to_json())
+print(out.to_list())
+print(out.to_df())
+print(out.to_json())
 ```
+
+L’API recommandée est **`run_plugin("<os>.<plugin>", **kwargs)`** : elle retourne un **`Renderer`** (`.to_df()`, `.to_list()`, etc.). La découverte des plugins est **mise en cache par version de Volatility 3** et par OS ; consulter la page *Plugins (SDK API)* du site de doc.
+
+**Ancienne forme (dépréciée)** : `win.pslist()` émet un `DeprecationWarning`. Préférer `win.run_plugin("windows.pslist")`.
 
 La documentation détaillée : [pydfir.github.io/pyDFIRRam](https://pydfir.github.io/pyDFIRRam).
 

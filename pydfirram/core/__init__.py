@@ -2,6 +2,14 @@
 pydfirram.core  - pydfirram core
 """
 
+from pydfirram.core.base import (
+    Generic,
+    OperatingSystem,
+    PluginDescriptor,
+    PluginEntry,
+    PluginRegistry,
+    PluginType,
+)
 from pydfirram.core.exceptions import (
     ArtifactAlreadyExistsError,
     InvalidPluginArgumentError,
@@ -36,4 +44,10 @@ __all__ = [
     "RunWorkspacePaths",
     "WorkspaceManager",
     "ArtifactManager",
+    "Generic",
+    "OperatingSystem",
+    "PluginRegistry",
+    "PluginDescriptor",
+    "PluginEntry",
+    "PluginType",
 ]

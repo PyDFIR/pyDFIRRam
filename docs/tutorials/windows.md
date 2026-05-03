@@ -18,28 +18,34 @@ dump = Path("/home/dev/image.dump")
 win = Windows(dump)
 ```
 
-### Listing Available Functions
+### Listing and inspecting plugins
 
-The available functions are all the Volatility plugins (located in the Volatility plugin path).
-
-To list all available functions:
+Qualified plugin names (e.g. `windows.pslist`) can be listed and checked without running them:
 
 ```python
-win.get_all_plugins()
+win.list_plugins()                    # sorted qualified names for Windows + generic plugins
+win.has_plugin("windows.pslist")
+win.plugin_info("pslist")             # PluginDescriptor; use .fq_name for the canonical id
 ```
 
-You can use this function to retrieve all the plugins.
+`get_all_plugins()` still returns a list of internal `PluginEntry` objects if you need the Volatility interface classes.
 
-### Using Parameters
+For the full plugin SDK (cache behaviour, migration), see the **[Plugins (SDK API)](plugins-sdk.md)** tutorial.
 
-If you want to use Volatility parameters, refer to the plugin documentation. The parameters expected are generally the same with the same names.
+### Running plugins (recommended)
 
-For example, to use the `pslist` plugin with a parameter:
+Use `run_plugin` with a **qualified** name; it returns a [`Renderer`](../reference/renderer.md) (`.to_list()`, `.to_df()`, `.to_json()`, etc.):
 
 ```python
-win.pslist(pid=4).to_list()
+win.run_plugin("windows.pslist", pid=4).to_list()
 ```
+
+Parameters match those documented for the Volatility plugin.
+
+### Legacy dynamic access (deprecated)
+
+Calling plugins as attributes (e.g. `win.pslist(...)`) still works but emits a **`DeprecationWarning`**. Prefer `run_plugin("windows.pslist", ...)` for stable code.
 
 ### Note
 
-On the return of the Volatility functions, a `Rendering` class is retrieved. This allows us to format our output as desired.
+`run_plugin` wraps the raw Volatility result in a **`Renderer`** so you can format output consistently. The underlying object is also available as `renderer.data` if needed.

@@ -56,6 +56,7 @@ nav:
   - index.md
   - Tutorials:
     - Installation : tutorials/installation.md
+    - Plugins (SDK API) : tutorials/plugins-sdk.md
     - Windows : tutorials/windows.md
     - Linux/Mac : tutorials/linux.md
   - Reference:
