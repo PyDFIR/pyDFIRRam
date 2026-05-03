@@ -6,6 +6,13 @@ This guide provides a brief and concise demonstration of how to use the pyDFIRRa
 
 Currently, the project is under development. To use the Volatility-related functions for Windows, follow these steps:
 
+Install pyDFIRRam (add **`[pandas]`** if you use `.to_df()`):
+
+```bash
+pip install pydfirram
+pip install "pydfirram[pandas]"   # optional, for DataFrames
+```
+
 ### Initial Setup
 
 First, create an object for your memory dump:
@@ -34,13 +41,20 @@ For the full plugin SDK (cache behaviour, migration), see the **[Plugins (SDK AP
 
 ### Running plugins (recommended)
 
-Use `run_plugin` with a **qualified** name; it returns a [`Renderer`](../reference/renderer.md) (`.to_list()`, `.to_df()`, `.to_json()`, etc.):
+Use `run_plugin` with a **qualified** name; it returns a [`Renderer`](../reference/renderer.md) (`.to_list()`, `.to_df()`, `.to_json()`, `.to_jsonl(path)`, `.to_csv(path)`, optional `.to_parquet(path)`, etc.):
 
 ```python
 win.run_plugin("windows.pslist", pid=4).to_list()
 ```
 
 Parameters match those documented for the Volatility plugin.
+
+#### Export shape (small vs large results)
+
+- **Small tables / notebooks**: use `.to_df()` (requires the optional **`pandas`** extra: `pip install "pydfirram[pandas]"`).
+- **Large outputs / streaming to disk**: prefer `.to_jsonl(path)` or `.to_csv(path)` so you do not materialize everything as a single in-memory DataFrame. These use the standard library only (no pandas).
+- **Batch / reporting**: when using a run workspace, write artefacts under the run’s **`tables/`** directory (see `RunWorkspacePaths.tables` in the workspace reference), e.g. `runs/<run_id>/tables/pslist.jsonl`.
+- **Parquet**: `.to_parquet(path)` is optional behind the **`parquet`** extra (`pandas` + `pyarrow`); see the [Renderer](../reference/renderer.md) reference.
 
 ### Legacy dynamic access (deprecated)
 

@@ -22,6 +22,8 @@ df = win.run_plugin("windows.pslist").to_df()
 
 `run_plugin` returns a [`Renderer`](../reference/renderer.md). The raw TreeGrid (or other Volatility result) is available as `renderer.data` if you need it.
 
+For **small** result sets, `.to_df()` is convenient (optional **`pandas`** extra). For **large** outputs, use `.to_jsonl(path)` or `.to_csv(path)` to stream to disk without pandas. When you record batch artefacts, place files under the run’s **`tables/`** path (`RunWorkspacePaths.tables`). Optional `.to_parquet(path)` needs the **`parquet`** extra — see the Renderer reference.
+
 You can pass keyword arguments expected by the Volatility plugin configuration (same names as in the Volatility CLI/docs):
 
 ```python
