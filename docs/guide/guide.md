@@ -21,7 +21,7 @@ pip install pydfirram
 
 ### Basic Usage
 ```python
-from pydfirram.modules.windows import Windws
+from pydfirram.modules.windows import Windows
 wrap = Windows("dmp.raw")
 
 data = wrap.<plugins>().<rendering>()

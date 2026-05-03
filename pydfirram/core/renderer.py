@@ -36,6 +36,8 @@ from volatility3.cli.text_renderer import (                 # type: ignore
     multitypedata_as_text   as v3_multitypedata_as_text,
 )
 
+from pydfirram.core.exceptions import OutputHandlingError
+
 
 # allow no PascalCase naming style and "lambda may not be necessary"
 # pylint: disable=W0108,C0103
@@ -137,6 +139,36 @@ class TreeGrid_to_json(V3CLIRenderer):  # type: ignore
         return {"data": final_output[1]}
 
 
+class RenderableDataFrame(pd.DataFrame):
+    """
+    DataFrame with optional full display rendering.
+
+    When enabled, display options are applied only during rendering so pandas
+    global options stay unchanged.
+    """
+
+    _metadata = ["_pydfirram_full_display"]
+
+    @property
+    def _constructor(self):
+        return RenderableDataFrame
+
+    def _with_local_display_context(self, render_callable):
+        if getattr(self, "_pydfirram_full_display", False):
+            with pd.option_context(
+                "display.max_rows", None,
+                "display.max_columns", None,
+            ):
+                return render_callable()
+        return render_callable()
+
+    def __repr__(self) -> str:
+        return self._with_local_display_context(super().__repr__)
+
+    def _repr_html_(self):  # type: ignore[override]
+        return self._with_local_display_context(super()._repr_html_)
+
+
 class Renderer():
     """
     Class for rendering data in various formats.
@@ -175,8 +207,10 @@ class Renderer():
             parsed_data : dict[str, Any] = TreeGrid_to_json().render(self.data)
             return parsed_data.get("data")
         except Exception as e:
-            logger.error("Impossible to render data in dictionary form.")
-            raise e
+            logger.error("Impossible de convertir la sortie plugin en liste.")
+            raise OutputHandlingError(
+                "Impossible de convertir la sortie plugin en liste exploitable."
+            ) from e
 
     def file_render(self)-> None:
         """
@@ -195,8 +229,10 @@ class Renderer():
             # (fixme) : `render()` return nothing
             TreeGrid_to_json().render(self.data)
         except Exception as e:
-            logger.error("Impossible to render data in dictionary form.")
-            raise e
+            logger.error("Impossible de rendre la sortie plugin en fichier.")
+            raise OutputHandlingError(
+                "Impossible de traiter les sorties artefacts du plugin."
+            ) from e
 
     def to_json(self) -> str:
         """
@@ -215,8 +251,10 @@ class Renderer():
             data_as_dict = self.to_list()
             return dumps(data_as_dict)
         except Exception as e:
-            logger.error("Unable to convert data to JSON.")
-            raise e
+            logger.error("Impossible de convertir la sortie plugin en JSON.")
+            raise OutputHandlingError(
+                "Impossible de convertir la sortie plugin au format JSON."
+            ) from e
 
     def to_df(self,max_row: bool = False) -> pd.DataFrame:
         """
@@ -233,10 +271,11 @@ class Renderer():
         """
         try:
             data_as_dict = self.to_list()
-            if max_row:
-                pd.set_option('display.max_rows', None)
-                pd.set_option('display.max_columns', None)
-            return pd.DataFrame(data_as_dict)
+            dataframe = RenderableDataFrame(data_as_dict)
+            dataframe._pydfirram_full_display = max_row
+            return dataframe
         except Exception as e:
-            logger.error("Data cannot be rendered as a DataFrame.")
-            raise e
+            logger.error("Impossible de convertir la sortie plugin en DataFrame.")
+            raise OutputHandlingError(
+                "Impossible de convertir la sortie plugin en tableau d'analyse."
+            ) from e

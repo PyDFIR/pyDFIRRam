@@ -37,6 +37,10 @@ Example:
 """
 
 import os
+import shutil
+import threading
+import time
+import uuid
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -79,6 +83,10 @@ from volatility3.framework.automagic.stacker import (       # type: ignore
 
 from pydfirram.core.handler import create_file_handler
 from pydfirram.core.renderer import Renderer
+from pydfirram.core.exceptions import (
+    PluginTimeoutError,
+    VolatilityContextError,
+)
 
 
 class OperatingSystem(Enum):
@@ -162,6 +170,7 @@ class Context():
         operating_system: OperatingSystem,
         dump_file: Path,
         plugin: PluginEntry,
+        output_dir: Optional[Path] = None,
     ):
         """Initializes a context.
 
@@ -175,6 +184,9 @@ class Context():
         self.context = V3Context()
         self.plugin = plugin
         self.automag: Any = None
+        self.output_dir = output_dir or Path(os.getcwd())
+        self.run_id = uuid.uuid4().hex
+        self.run_output_dir = self.output_dir / self.run_id
 
     def set_context(self) -> None:
         """ setup the current context """
@@ -197,7 +209,10 @@ class Context():
         """
         plugin = self.plugin.interface
         base_config_path = "plugins"
-        file_handler = create_file_handler(os.getcwd())
+        file_handler = create_file_handler(
+            str(self.output_dir),
+            run_id=self.run_id,
+        )
         try:
             # Construct the plugin, clever magic figures out how to
             # fulfill each requirement that might not be fulfilled
@@ -216,7 +231,7 @@ class Context():
             )
         except V3UnsatisfiedException as err:
             logger.error(f"Failed to build plugin: {err}")
-            raise err
+            raise
         return constructed
 
     def add_arguments(
@@ -314,7 +329,12 @@ class Generic():
     # Magic methods
     #---
 
-    def __init__(self, operating_system: OperatingSystem, dump_file: Path):
+    def __init__(
+        self,
+        operating_system: OperatingSystem,
+        dump_file: Path,
+        timeout: Optional[float] = None,
+    ):
         """Initializes a generic OS.
 
         Automatically get all available Volatility3 plugins for the OS.
@@ -333,6 +353,7 @@ class Generic():
         self.context: Optional[Context] = None
         self.temp_data = None
         self.tmp_plugin: Optional[PluginEntry] = None
+        self.timeout = self._validate_timeout(timeout, "timeout")
 
         logger.info(f"Generic OS initialized: {self.os}")
 
@@ -418,6 +439,119 @@ class Generic():
         logger.info(f"Found {len(parsed)} plugins for {self.os}")
         return parsed
 
+    def _validate_timeout(self, timeout: Optional[float], field_name: str) -> Optional[float]:
+        """Validate timeout values for plugin execution."""
+        if timeout is None:
+            return None
+        if timeout <= 0:
+            raise ValueError(
+                f"La valeur '{field_name}' doit etre un nombre positif en secondes."
+            )
+        return timeout
+
+    def _effective_timeout(self, timeout: Optional[float]) -> Optional[float]:
+        """Resolve run timeout from per-call and instance-level values."""
+        return self._validate_timeout(timeout, "timeout") if timeout is not None else self.timeout
+
+    def _cleanup_timeout_artifacts(self, plugin_name: str) -> None:
+        """Best-effort cleanup for temporary artifacts after a timeout."""
+        if self.context is None:
+            return
+
+        run_output_dir = self.context.run_output_dir
+        if not run_output_dir.exists():
+            return
+
+        try:
+            temp_files = list(run_output_dir.glob("tmp_*.vol3"))
+            for temp_file in temp_files:
+                try:
+                    temp_file.unlink()
+                except FileNotFoundError:
+                    continue
+                except OSError as err:
+                    logger.warning(
+                        "Unable to remove temp file '{}' after timeout of plugin '{}': {}",
+                        temp_file,
+                        plugin_name,
+                        err,
+                    )
+
+            remaining = list(run_output_dir.iterdir())
+            if not remaining:
+                shutil.rmtree(run_output_dir, ignore_errors=True)
+        except OSError as err:
+            logger.warning(
+                "Timeout cleanup failed for plugin '{}' in '{}': {}",
+                plugin_name,
+                run_output_dir,
+                err,
+            )
+
+    def _run_with_timeout(
+        self,
+        run_callable: Callable[[], Any],
+        plugin_name: str,
+        timeout: Optional[float],
+    ) -> Any:
+        """Execute plugin run callable with an optional thread-level timeout."""
+        effective_timeout = self._effective_timeout(timeout)
+        if effective_timeout is None:
+            return run_callable()
+
+        result: dict[str, Any] = {"value": None, "error": None}
+
+        def runner() -> None:
+            try:
+                result["value"] = run_callable()
+            except BaseException as exc:
+                result["error"] = exc
+
+        worker = threading.Thread(
+            target=runner,
+            name=f"volatility-run-{plugin_name}",
+            daemon=True,
+        )
+        started_at = time.monotonic()
+        worker.start()
+        worker.join(timeout=effective_timeout)
+
+        if worker.is_alive():
+            elapsed = time.monotonic() - started_at
+            logger.error(
+                "Volatility plugin '{}' timed out after {:.2f}s (configured timeout: {:.2f}s).",
+                plugin_name,
+                elapsed,
+                effective_timeout,
+            )
+            logger.warning(
+                "Thread-level timeout cannot interrupt underlying Volatility execution immediately. "
+                "A future process-isolated runner should be used for hard kills."
+            )
+            self._cleanup_timeout_artifacts(plugin_name)
+            raise PluginTimeoutError(
+                f"Le plugin '{plugin_name}' a depasse le delai ({effective_timeout:.2f}s)."
+            )
+
+        if result["error"] is not None:
+            raise result["error"]
+
+        return result["value"]
+
+    def _build_runable_context(
+        self,
+        plugin: PluginEntry,
+        kwargs: dict[str, Any],
+    ) -> Any:
+        """Build and configure runnable Volatility context for a plugin."""
+        self.context = Context(self.os, self.dump_file, plugin) # type: ignore
+        self.context.set_automagic()
+        self.context.set_context()
+        builded_context = self.context.build() # type: ignore
+        if kwargs:
+            return self.context.add_arguments(builded_context, kwargs)
+        return builded_context
+
     #---
     # Public methods
     #---
@@ -426,6 +560,7 @@ class Generic():
     def run_plugin(
         self,
         plugin: PluginEntry,
+        timeout: Optional[float] = None,
         **kwargs: dict[str,Any],
     ) -> Any:
         """Run a volatility3 plugin with the given arguments.
@@ -440,18 +575,20 @@ class Generic():
         Raises:
             ValueError: If the context is not built.
         """
-        # (todo) : move `context.set_*()` in `Context.__init__()` ?
-        self.context = Context(self.os, self.dump_file, plugin) # type: ignore
-        self.context.set_automagic()
-        self.context.set_context()
-        builded_context = self.context.build() # type: ignore
-        if kwargs:
-            runable_context = self.context.add_arguments(builded_context,kwargs)
-        else:
-            runable_context = builded_context
+        runable_context = self._build_runable_context(plugin, kwargs)
+
         if self.context is None:
-            raise ValueError("Context not built.")
-        return runable_context.run()
+            raise VolatilityContextError(
+                "Le contexte Volatility n'a pas ete construit correctement."
+            )
+
+        logger.debug(
+            "Running plugin '{}' with timeout={}s and args={}",
+            plugin.name,
+            self._effective_timeout(timeout),
+            list(kwargs.keys()),
+        )
+        return self._run_with_timeout(runable_context.run, plugin.name, timeout)
 
     def validate_dump_file(self, dump_file: Path) -> bool:
         """Validate dump file location.

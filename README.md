@@ -1,62 +1,85 @@
 # pyDFIRRam
 
+[![CI](https://github.com/pyDFIR/pyDFIRRam/actions/workflows/ci.yml/badge.svg)](https://github.com/pyDFIR/pyDFIRRam/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/pydfirram.svg)](https://badge.fury.io/py/pydfirram)
-[![Build Status](https://travis-ci.org/pyDFIR/pyDFIRRam.svg?branch=main)](https://travis-ci.org/pyDFIR/pyDFIRRam)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-PyDFIRRam is a Python library designed to simplify and enhance memory forensics tasks. It provides tools to streamline research, parsing, and analysis of memory dumps, allowing users to focus on data rather than commands.
+**État du projet.** pyDFIRRam est un **SDK expérimental** pour orchestrer des plugins Volatility 3 sur des images mémoire. Il n’offre **ni isolation multi‑tenant ni garde‑fous de production** : chaque processus charge un dump dans un contexte Volatility classique, avec un **délai d’exécution des plugins borné** (`timeout` côté API). Utilisez‑le pour prototyper des chaînes d’analyse, pas comme service partagé entre clients.
 
-## Table of Contents
+PyDFIRRam encapsule les tâches d’analyse mémoire (recherche, parsing, sorties tabulaires) pour que vous restiez focalisé sur les données plutôt que sur la ligne de commande Volatility.
+
+## Table des matières
+
 - [Installation](#installation)
-- [Usage](#usage)
+- [Tests](#tests)
+- [Utilisation](#utilisation)
   - [Jupyter Lab](#jupyter-lab)
   - [Script](#script)
-  - [Examples](#examples)
-- [Objectives](#objectives)
+  - [Exemples](#exemples)
+- [Objectifs](#objectifs)
 
 ## Installation
-PyDFIRRam is built with Poetry, so you need to install it.
 
-You can install pyDFIRRam with the following commands:
+Le paquet s’installe avec `pip` ou [Poetry](https://python-poetry.org/).
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/pyDFIR/pyDFIRRam
-    ```
-2. Install it with Poetry:
-    ```bash
-    poetry install
-    ```
+```bash
+pip install pydfirram
+```
 
-## Usage
+Outils optionnels (notebooks, dépendance `graphviz` Python ; le binaire système `dot` reste requis pour un rendu graphique) :
 
-You can use the library in multiple ways:
-- In a Jupyter Lab environment
-- In a script
+```bash
+pip install "pydfirram[jupyter,viz]"
+```
+
+Avec Poetry, depuis le dépôt cloné :
+
+```bash
+poetry install
+poetry install --extras jupyter --extras viz
+```
+
+## Tests
+
+```bash
+tox
+```
+
+ou directement :
+
+```bash
+pytest
+```
+
+Les tests d’intégration qui touchent un fichier dump local sont marqués `requires_dump` et sont ignorés tant que la variable d’environnement ne pointe pas vers un fichier valide :
+
+```bash
+export PYDFIRRAM_DUMP_FILE=/chemin/absolu/vers/memory.dump
+pytest -m requires_dump
+```
+
+## Utilisation
+
+- Dans un environnement Jupyter (extra `jupyter`)
+- Dans un script Python
 
 ### Jupyter Lab
-
-Kickstart the project by running:
 
 ```bash
 poetry run jupyter lab
 ```
 
-In Jupyter Lab, you can use the library as follows:
-
 ```python
 from pathlib import Path
-from pydfirram.modules import Windows
+from pydfirram.modules.windows import Windows
 
 dumpfile = Path(DUMP_FILE)
 win = Windows(dumpfile)
-output = win.PsList(pid=[4]).to_df(max_row=True) # max_row=True is an option on to_df to see all the content of the dataframe. All the content will be printed in your Jupyter output cell.
+output = win.PsList(pid=[4]).to_df(max_row=True)
 print(output)
 ```
 
 ### Script
-
-You can also use the library in a Python script:
 
 ```python
 from pathlib import Path
@@ -66,23 +89,17 @@ dumpfile = Path(DUMP_FILE)
 win = Windows(dumpfile)
 output = win.pslist()
 
-# To get a list:
 print(output.to_list())
-
-# For a DataFrame:
 print(output.to_df())
-
-# Or convert it to JSON:
 print(win.pslist().to_json())
 ```
 
-All supported features are documented, check it out on [our documentation](https://pydfir.github.io/pyDFIRRam) !
+La documentation détaillée : [pydfir.github.io/pyDFIRRam](https://pydfir.github.io/pyDFIRRam).
 
-## Objectives
+## Objectifs
 
-1. Facilitate research and the try-and-retry process with Volatility
-2. Easily parse outputs
-3. Focus on data rather than commands
-4. Use as a dataset
-5. Manage multiple dumps in the same program
-
+1. Faciliter la recherche et l’itération avec Volatility
+2. Parser simplement les sorties
+3. Privilégier les données plutôt que les commandes
+4. Servir de base pour des jeux de données dérivés
+5. Analyser un dump à la fois dans un processus (pas de modèle multi‑locataire dans ce SDK)

@@ -7,6 +7,8 @@ from loguru import logger
 from .config import DUMP_FILE
 from typing import List, Any
 
+pytestmark = pytest.mark.requires_dump
+
 logger.opt(colors=True).info("<b><magenta> TEST PYDFIRRAM WINDOWS FUNCTIONS </magenta></b>")
 
 @pytest.fixture
@@ -299,7 +301,7 @@ def test_dumpfile_with_args_physaddr(windows_instance : Windows):
 @pytest.mark.filescan
 def test_filescan(windows_instance: Windows):
     logger.opt(colors=True).info("<b><cyan>filescan</cyan></b> from volatility is running")
-    output : Renderer = windows_instance.pstree()
+    output : Renderer = windows_instance.filescan()
     assert isinstance(output, Renderer), "Error during function execution"
     cmdline_content : list = output.to_list()
     assert isinstance(cmdline_content,list),"Not a list"
@@ -318,7 +320,7 @@ def test_getservicesids(windows_instance: Windows):
     logger.success("TEST PASSED !")
 
 # windows.getsids.GetSIDs
-@pytest.mark.getstids
+@pytest.mark.getsids
 def test_getsids(windows_instance: Windows):
     logger.opt(colors=True).info("<b><cyan>getsids</cyan></b> from volatility is running")
     output : Renderer = windows_instance.getsids()

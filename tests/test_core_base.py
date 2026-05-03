@@ -4,6 +4,9 @@ from pydfirram.core.base import Generic, OperatingSystem
 from pydfirram.modules.windows import Windows
 from loguru import logger
 from .config import DUMP_FILE
+
+pytestmark = pytest.mark.requires_dump
+
 logger.opt(colors=True).info("<b><magenta> TEST PYDFIRRAM BASE FUNCTIONS </magenta></b>")
 
 

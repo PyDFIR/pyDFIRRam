@@ -26,10 +26,10 @@ Example:
         >>> plugin = generic.pslist(pid=[4]).to_df()
         >>> print(plugin)
 """
-from typing import Any
+from typing import Any, Optional
 from pathlib import Path
 
-from pydfirram.core.base import Generic, OperatingSystem,Context
+from pydfirram.core.base import Generic, OperatingSystem
 from pydfirram.core.renderer import Renderer
 
 
@@ -52,7 +52,7 @@ class Windows(Generic):
     __init__(dumpfile)
         Initializes the Windows class with the given dump file.
     """
-    def __init__(self, dumpfile: str|Path) -> None:
+    def __init__(self, dumpfile: str|Path, timeout: Optional[float] = None) -> None:
         """
         Initializes the Windows class.
 
@@ -71,6 +71,7 @@ class Windows(Generic):
         super().__init__(
             operating_system    = OperatingSystem.WINDOWS,
             dump_file           = dumpfile,
+            timeout             = timeout,
         )
 
     # (todo) : seems to be a boilerplate from `Context`
@@ -81,7 +82,11 @@ class Windows(Generic):
             context.config[prefix+k] = v
         return context
 
-    def dumpfiles(self, **_kwargs: dict[str,Any]) -> None:
+    def dumpfiles(
+        self,
+        timeout: Optional[float] = None,
+        **_kwargs: dict[str,Any],
+    ) -> None:
         """
             Dump memory files based on provided parameters.
 
@@ -119,16 +124,4 @@ class Windows(Generic):
             None
             """
         plugin = self.get_plugin("dumpfiles")
-        context = Context(
-            operating_system    = OperatingSystem.WINDOWS,
-            dump_file           = self.dump_files,
-            plugin              = plugin,
-        )
-        context.set_automagic()
-        context.set_context()
-        builded_context = context.build()
-        if _kwargs:
-            runable_context = context.add_arguments(builded_context,_kwargs)
-        else:
-            runable_context = builded_context
-        Renderer(runable_context.run()).file_render()
+        Renderer(self.run_plugin(plugin, timeout=timeout, **_kwargs)).file_render()
